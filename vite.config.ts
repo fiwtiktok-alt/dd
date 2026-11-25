@@ -6,6 +6,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Relative asset paths make the production build work on GitHub Pages project URLs.
+    base: './',
     plugins: [
       react(),
       tailwindcss(),
