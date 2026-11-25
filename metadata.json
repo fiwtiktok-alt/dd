@@ -1,0 +1,8 @@
+{
+  "name": "VOYA Motion Studio",
+  "description": "3D Glass UI Motion Graphics Studio & AI Script-to-Motion Director for portrait and landscape video creation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

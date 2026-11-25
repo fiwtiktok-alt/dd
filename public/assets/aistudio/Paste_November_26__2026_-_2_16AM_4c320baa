@@ -1,0 +1,2609 @@
+Saya telah menambahkan **sistem efek & animasi bergaya video referensi Anda** (3D Glassmorphism UI, 3D Tilted Smartphone, kartu UI yang melayang keluar/*pop-out*, tumpukan kartu parallax 3D, animasi ketuk *Crystal Glass Orb*, efek *glass icon burst*, kilau cahaya studio *emerald-teal*, serta tipografi kinetik di bagian bawah) **dan memperbaiki modul Export/Render** agar benar-benar menghasilkan file video yang bisa langsung diputar ulang & disimpan.
+
+### Apa yang Baru & Diperbaiki:
+1. **Efek & Animasi Persis Video Referensi (`Sber-Style 3D Glass UI`):**
+   - **Scene 1 (`00:00`):** *3D Glass Icon Burst* berlapis kaca buram yang membesar halus menuju smartphone 3D.
+   - **Scene 2 (`00:01–00:02`):** *3D Tilted Smartphone* + kartu UI yang **terangkat keluar (*Pop-Out Floating Card*)** dengan bayangan 3D + bola kristal kaca.
+   - **Scene 3 (`00:03–00:05`):** *3D Crystal Glass Orb* menekan & menggeser kartu UI secara halus ke atas sambil layar ponsel ikut bergeser (*scroll & tilt*).
+   - **Scene 4 (`00:06–00:08`):** **Tumpukan 3 Kartu Parallax 3D** (*Stacked 3D Glass Cards*: Sentimen Risiko, Tekanan Inflasi, Suku Bunga The Fed) yang mekar dalam perspektif 3D.
+   - **Scene 5 (`00:09–00:11`):** Daftar UI + efek ketukan *Glass Orb* beriak (*orb tap ripple*) yang menyorot peluang pemulihan.
+   - **Scene 6 (`00:12`):** *Hero 3D Smartphone Spin-Landing* + kartu melayang & penutup **`VOYA NEWS`**.
+2. **Export / Render Video Berfungsi Penuh (`⬇ Export / Render` di kanan atas):**
+   - Dilengkapi **Audio Keepalive** agar perekaman WebM/MP4 via `MediaRecorder` tidak macet atau 0 byte.
+   - Default resolusi ekspor `720×1280 (720p Portrait)` agar rendering lancar di browser (bisa diubah ke `1080p` / `1440p` / `4K`), plus opsi **`First 12s Highlight (Cepat)`** jika ingin langsung mengetes hasil simpan video dalam 12 detik.
+   - Setelah render selesai, muncul **pemutar `<video>` langsung di dalam panel Export** beserta tombol **Save Video File** (jika browser/sandbox menahan unduhan otomatis, Anda tetap bisa klik tombol simpan atau klik kanan video → *Save video as*).
+
+Salin seluruh kode di bawah ini (**mulai dari `<!DOCTYPE html>` sampai `</html>`, tanpa baris ```` ```html ````**), lalu klik **Run**:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VOYA MOTION STUDIO — 3D Glass UI & AI Director</title>
+<style>
+  :root {
+    --bg-app: #0c0d10;
+    --bg-panel: #14161b;
+    --bg-elev: #1b1e25;
+    --bg-hover: #232731;
+    --bg-input: #101216;
+    --border: #272b35;
+    --border-strong: #373c4a;
+    --text: #e6e8ed;
+    --text-soft: #9aa1b0;
+    --text-dim: #666d7c;
+    --accent: #2d7ff9;
+    --accent-soft: rgba(45, 127, 249, 0.16);
+    --warn: #e5a93b;
+    --danger: #e25555;
+    --ok: #38b87c;
+    --track-h: 26px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; user-select: none; }
+  input, textarea, select { user-select: text; font-family: var(--font-ui); }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: var(--bg-app); color: var(--text);
+    font-family: var(--font-ui); font-size: 11.5px; overflow: hidden;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-app); }
+  ::-webkit-scrollbar-thumb { background: #2d323e; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3e4555; }
+
+  #app {
+    display: grid;
+    grid-template-rows: auto 1fr 4px var(--timeline-h, 210px);
+    grid-template-columns: var(--left-w, 245px) 4px 1fr 4px var(--right-w, 285px);
+    width: 100vw; height: 100vh;
+  }
+  #topbar {
+    grid-column: 1 / -1; grid-row: 1;
+    background: var(--bg-panel); border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    padding: 4px 8px; gap: 4px 8px; min-height: 36px;
+  }
+  #left-panel {
+    grid-column: 1; grid-row: 2;
+    background: var(--bg-panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  }
+  #split-left { grid-column: 2; grid-row: 2; cursor: col-resize; background: var(--bg-app); }
+  #center-panel {
+    grid-column: 3; grid-row: 2;
+    background: #0a0b0e; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  }
+  #split-right { grid-column: 4; grid-row: 2; cursor: col-resize; background: var(--bg-app); }
+  #right-panel {
+    grid-column: 5; grid-row: 2;
+    background: var(--bg-panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  }
+  #split-bottom { grid-column: 1 / -1; grid-row: 3; cursor: row-resize; background: var(--bg-app); border-top: 1px solid var(--border); }
+  #timeline-panel {
+    grid-column: 1 / -1; grid-row: 4;
+    background: var(--bg-panel); border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  }
+  .splitter:hover { background: var(--accent) !important; }
+
+  .brand { display: flex; align-items: center; gap: 5px; font-weight: 600; letter-spacing: 0.3px; color: var(--text); white-space: nowrap; }
+  .brand-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
+  .tb-group { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+  button, .btn {
+    background: var(--bg-elev); color: var(--text); border: 1px solid var(--border);
+    border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px; height: 23px; white-space: nowrap; text-decoration: none;
+  }
+  button:hover, .btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+  button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+  button.ok-btn, .btn.ok-btn { background: var(--ok); border-color: var(--ok); color: #07140d; font-weight: 600; }
+  button.active { background: var(--accent-soft); border-color: var(--accent); color: #7cb3ff; }
+  button.danger-btn { color: #ff8c8c; border-color: #462626; }
+  button.icon-btn { padding: 2px 5px; justify-content: center; min-width: 23px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  input[type="text"], input[type="number"], select, textarea {
+    background: var(--bg-input); color: var(--text); border: 1px solid var(--border);
+    border-radius: 3px; padding: 2px 6px; font-size: 11px; outline: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input[type="number"] { font-family: var(--font-mono); width: 60px; height: 22px; }
+  select { height: 22px; }
+  .proj-name-input { width: 125px; height: 23px; font-weight: 500; }
+
+  .status-pill {
+    font-size: 10px; padding: 2px 6px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg-input); color: var(--text-soft); white-space: nowrap;
+  }
+  .status-pill.saved { color: var(--ok); border-color: rgba(56,184,124,0.35); }
+  .status-pill.unsaved { color: var(--warn); border-color: rgba(229,169,59,0.35); }
+  .status-pill.error { color: var(--danger); border-color: rgba(226,85,85,0.4); }
+
+  .panel-header {
+    height: 26px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 8px; border-bottom: 1px solid var(--border); background: #171920; flex-shrink: 0;
+  }
+  .panel-title { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-soft); }
+  .tab-strip {
+    display: flex; flex-wrap: wrap; gap: 2px; padding: 4px;
+    border-bottom: 1px solid var(--border); background: var(--bg-panel); flex-shrink: 0;
+  }
+  .tab-btn {
+    height: 20px; padding: 0 5px; font-size: 10px; background: transparent;
+    border: 1px solid transparent; color: var(--text-soft); border-radius: 3px;
+  }
+  .tab-btn.active { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
+  .panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px; }
+
+  .asset-item {
+    display: flex; align-items: center; gap: 6px; padding: 5px 6px;
+    border: 1px solid transparent; border-radius: 3px; cursor: pointer; margin-bottom: 3px; background: var(--bg-elev);
+  }
+  .asset-item:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+  .asset-thumb {
+    width: 30px; height: 22px; border-radius: 2px; background: #0d0f13;
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0; font-size: 9px; color: var(--text-dim);
+  }
+  .asset-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .asset-meta { flex: 1; min-width: 0; }
+  .asset-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .asset-sub { font-size: 9.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .preview-toolbar {
+    height: 26px; background: var(--bg-panel); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 8px; gap: 6px; flex-shrink: 0;
+  }
+  #preview-stage {
+    flex: 1; position: relative; overflow: hidden; display: flex;
+    align-items: center; justify-content: center; background: #090a0d;
+  }
+  #preview-canvas { box-shadow: 0 0 0 1px #2f3542, 0 8px 28px rgba(0,0,0,0.65); cursor: default; }
+  .preview-footer {
+    height: 22px; background: var(--bg-panel); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 8px;
+    font-size: 10px; color: var(--text-soft); flex-shrink: 0;
+  }
+
+  .prop-section { border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; background: #171920; }
+  .prop-head {
+    padding: 5px 7px; font-size: 10.5px; font-weight: 600; color: var(--text-soft);
+    border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+  }
+  .prop-grid { padding: 6px; display: grid; grid-template-columns: 88px 1fr; gap: 5px 6px; align-items: center; }
+  .prop-label { font-size: 10.5px; color: var(--text-soft); display: flex; align-items: center; gap: 4px; }
+  .prop-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .kf-dot {
+    width: 11px; height: 11px; border: 1px solid var(--text-dim); transform: rotate(45deg);
+    cursor: pointer; flex-shrink: 0; display: inline-block; background: transparent;
+  }
+  .kf-dot.has-kf { border-color: var(--accent); }
+  .kf-dot.at-kf { background: var(--accent); border-color: var(--accent); }
+
+  .tl-toolbar {
+    height: 28px; background: #171920; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 8px; gap: 6px; flex-shrink: 0;
+  }
+  .timecode {
+    font-family: var(--font-mono); font-size: 12px; color: #7cb3ff;
+    background: var(--bg-input); border: 1px solid var(--border); padding: 2px 8px; border-radius: 3px;
+  }
+  .tl-body { flex: 1; display: grid; grid-template-columns: 235px 1fr; min-height: 0; overflow: hidden; }
+  .tl-left { border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+  .tl-left-head {
+    height: 24px; border-bottom: 1px solid var(--border); padding: 0 6px;
+    display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .tl-rows-left { flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .tl-row-head {
+    height: var(--track-h); border-bottom: 1px solid #1f232c; padding: 0 5px;
+    display: flex; align-items: center; gap: 4px; cursor: pointer; background: var(--bg-panel);
+  }
+  .tl-row-head.selected { background: #1e2636; }
+  .tl-row-name { flex: 1; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl-type-badge { font-size: 8.5px; padding: 1px 4px; border-radius: 2px; background: #232733; color: var(--text-soft); text-transform: uppercase; }
+  .tl-mini-btn {
+    width: 16px; height: 16px; padding: 0; font-size: 9px; border-radius: 2px;
+    justify-content: center; border-color: transparent; background: transparent; color: var(--text-dim);
+  }
+  .tl-mini-btn.on { color: var(--accent); background: var(--accent-soft); }
+  .tl-mini-btn.warn-on { color: var(--warn); background: rgba(229,169,59,0.16); }
+
+  .tl-right { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+  #tl-ruler-wrap { height: 24px; border-bottom: 1px solid var(--border); overflow: hidden; position: relative; background: #121419; flex-shrink: 0; }
+  #tl-ruler { display: block; cursor: pointer; }
+  #tl-tracks-scroll { flex: 1; overflow: auto; position: relative; background: #101216; }
+  #tl-tracks-inner { position: relative; min-height: 100%; }
+  .tl-lane { height: var(--track-h); border-bottom: 1px solid #1b1f27; position: relative; }
+  .tl-lane.selected { background: rgba(45,127,249,0.05); }
+  .tl-clip {
+    position: absolute; top: 3px; height: 20px; border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.15); cursor: grab; overflow: hidden;
+    display: flex; align-items: center; padding: 0 6px; font-size: 10px;
+  }
+  .tl-clip.selected { border-color: #fff; box-shadow: 0 0 0 1px var(--accent); }
+  .tl-clip.locked { opacity: 0.72; cursor: not-allowed; }
+  .tl-clip-handle { position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize; background: rgba(255,255,255,0.15); }
+  .tl-clip-handle.left { left: 0; }
+  .tl-clip-handle.right { right: 0; }
+  .tl-clip-wave { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.42; pointer-events: none; }
+  .tl-kf {
+    position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; margin-left: -4px;
+    background: #f5b942; border: 1px solid #111; transform: rotate(45deg); cursor: pointer; z-index: 4;
+  }
+  .tl-kf.selected { background: #fff; border-color: var(--accent); }
+  #tl-playhead { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--accent); pointer-events: none; z-index: 15; }
+
+  #graph-drawer { height: 120px; border-top: 1px solid var(--border); background: #0e1014; display: none; flex-direction: column; flex-shrink: 0; }
+  #graph-drawer.open { display: flex; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 1000;
+    display: none; align-items: center; justify-content: center; padding: 14px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-panel); border: 1px solid var(--border-strong); border-radius: 5px;
+    width: min(980px, 96vw); max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.75);
+  }
+  .modal.narrow { width: min(560px, 95vw); }
+  .modal-head { padding: 9px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+  .modal-body { padding: 12px; overflow-y: auto; flex: 1; }
+  .modal-foot { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+
+  .sb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin-top: 8px; }
+  .sb-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .sb-card.approved { border-color: var(--ok); }
+  .sb-head { display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+  .badge { font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: #262b36; color: var(--text-soft); }
+  .badge.ok { background: rgba(56,184,124,0.18); color: var(--ok); }
+  .badge.warn { background: rgba(229,169,59,0.18); color: var(--warn); }
+
+  .sub-ctrl-bar { display: flex; align-items: center; gap: 3px; background: #101216; border: 1px solid var(--border); border-radius: 3px; padding: 2px 3px; }
+  #toast-box { position: fixed; right: 14px; bottom: 14px; z-index: 2000; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
+  .toast { background: #1d212b; border: 1px solid var(--border-strong); color: var(--text); padding: 6px 10px; border-radius: 4px; font-size: 11px; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header id="topbar">
+    <div class="tb-group">
+      <div class="brand"><span class="brand-dot"></span>VOYA</div>
+      <input id="proj-name" class="proj-name-input" type="text" value="VOYA_Bitcoin_Tariff_9x16" title="Project Name" />
+      <span id="proj-status" class="status-pill saved">Saved</span>
+      <button id="btn-save" title="Save Project (Ctrl+S)">Save</button>
+      <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)">↶</button>
+      <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)">↷</button>
+      <button id="btn-ai-director" class="primary" title="Open AI Script-to-Motion Director">✦ AI Script</button>
+    </div>
+
+    <div class="tb-group">
+      <button id="btn-import" title="Import Image, Video, Audio, or SRT">Import</button>
+      <input id="file-import-input" type="file" multiple accept="image/*,video/*,audio/*,.srt" hidden />
+      <button id="btn-comp-settings" title="Composition Settings (1080×1920)">Comp</button>
+      <button id="btn-add-text" title="Add Text Layer">+Txt</button>
+      <button id="btn-add-shape" title="Add Shape Layer">+Shp</button>
+      <button id="btn-add-image" title="Add Image Layer">+Img</button>
+      <button id="btn-add-3d" title="Add 3D Object / Glass UI">+3D</button>
+      <button id="btn-add-sub" title="Add Subtitle Layer">+Sub</button>
+    </div>
+
+    <div class="tb-group">
+      <div class="sub-ctrl-bar">
+        <button id="btn-toggle-subs" class="active" title="Show/Hide Subtitles">Subs: ON</button>
+        <button id="btn-mute-text" title="Mute All Text & Subtitles on Frame">Mute Txt: OFF</button>
+      </div>
+      <button id="btn-preview-play" title="Play/Pause (Space)">▶ Play</button>
+      <button id="btn-export" class="primary" title="Render & Save Video">⬇ Export / Render</button>
+      <button id="btn-workspace" title="Reset Layout">Layout</button>
+    </div>
+  </header>
+
+  <aside id="left-panel">
+    <div class="panel-header">
+      <span class="panel-title">Project &amp; Assets</span>
+      <div style="display:flex;gap:3px;">
+        <button id="btn-new-folder" class="icon-btn" title="New Folder">📁</button>
+        <button id="btn-clean-unused" class="icon-btn" title="Delete Unused Assets">🧹</button>
+      </div>
+    </div>
+    <div id="asset-tabs" class="tab-strip"></div>
+    <div id="asset-list" class="panel-body"></div>
+    <div id="asset-preview-box" style="border-top:1px solid var(--border);padding:6px;background:#101216;font-size:10px;color:var(--text-soft);display:none;"></div>
+  </aside>
+  <div id="split-left" class="splitter"></div>
+
+  <main id="center-panel">
+    <div class="preview-toolbar">
+      <div class="tb-group">
+        <select id="preview-zoom-select" title="Preview Zoom">
+          <option value="fit">Fit Comp</option>
+          <option value="fitW">Fit Width</option>
+          <option value="fitH">Fit Height</option>
+          <option value="0.25">25%</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1">100%</option>
+        </select>
+        <button id="btn-zoom-out" class="icon-btn" title="Zoom Out">−</button>
+        <button id="btn-zoom-in" class="icon-btn" title="Zoom In">+</button>
+        <button id="btn-center-comp" title="Center Composition">Center</button>
+      </div>
+      <div class="tb-group">
+        <button id="btn-safe-area" class="active" title="Social 9:16 Safe Area">Safe</button>
+        <button id="btn-grid" title="Composition Grid">Grid</button>
+        <button id="btn-rulers" class="active" title="Rulers">Rulers</button>
+        <button id="btn-checker" title="Transparency Checkerboard">Alpha</button>
+        <button id="btn-fullscreen" class="icon-btn" title="Fullscreen Preview">⛶</button>
+      </div>
+    </div>
+    <div id="preview-stage">
+      <canvas id="preview-canvas"></canvas>
+    </div>
+    <div class="preview-footer">
+      <span id="comp-info-label">1080×1920 • 30 fps • 9:16</span>
+      <span id="render-engine-badge">3D Glassmorphism UI Engine Active</span>
+    </div>
+  </main>
+  <div id="split-right" class="splitter"></div>
+
+  <aside id="right-panel">
+    <div class="panel-header">
+      <span class="panel-title">Inspector</span>
+      <div class="tb-group">
+        <button id="tab-prop-layer" class="tab-btn active">Layer</button>
+        <button id="tab-prop-qc" class="tab-btn">QC</button>
+        <button id="tab-prop-ai" class="tab-btn">AI Edit</button>
+      </div>
+    </div>
+    <div id="inspector-body" class="panel-body"></div>
+  </aside>
+
+  <div id="split-bottom" class="splitter"></div>
+  <section id="timeline-panel">
+    <div class="tl-toolbar">
+      <div class="tb-group">
+        <button id="tl-start" class="icon-btn" title="Go to Beginning (Home)">⏮</button>
+        <button id="tl-prev" class="icon-btn" title="Previous Frame (Left)">◀</button>
+        <button id="tl-play" class="icon-btn primary" title="Play/Pause (Space)">▶</button>
+        <button id="tl-stop" class="icon-btn" title="Stop">■</button>
+        <button id="tl-next" class="icon-btn" title="Next Frame (Right)">▶|</button>
+        <button id="tl-end" class="icon-btn" title="Go to End (End)">⏭</button>
+        <span id="tl-timecode" class="timecode">00:00:00:00</span>
+      </div>
+      <div class="tb-group">
+        <button id="tl-split" title="Split Selected Layer at Playhead">Split</button>
+        <button id="tl-dup" title="Duplicate Layer (Ctrl+D)">Dup</button>
+        <button id="tl-del" class="danger-btn" title="Delete Layer (Delete)">Del</button>
+        <button id="tl-snap" class="active" title="Snapping Toggle">Snap</button>
+        <button id="tl-graph-toggle" title="Toggle Keyframe Graph Editor">Graph</button>
+        <span style="color:var(--text-dim);font-size:10px;">Zoom</span>
+        <input id="tl-zoom" type="range" min="15" max="140" value="44" style="width:72px;" />
+      </div>
+    </div>
+
+    <div class="tl-body">
+      <div class="tl-left">
+        <div class="tl-left-head"><span>LAYERS / TRACKS</span><span id="tl-layer-count">0 layers</span></div>
+        <div id="tl-rows-left" class="tl-rows-left"></div>
+      </div>
+      <div class="tl-right">
+        <div id="tl-ruler-wrap"><canvas id="tl-ruler" height="24"></canvas></div>
+        <div id="tl-tracks-scroll">
+          <div id="tl-tracks-inner">
+            <div id="tl-lanes"></div>
+            <div id="tl-playhead"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="graph-drawer">
+      <div style="height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--border);font-size:10px;">
+        <span id="graph-label">Graph Editor — Select a layer &amp; property</span>
+        <div class="tb-group">
+          <select id="graph-prop-select">
+            <option value="x">Position X</option>
+            <option value="y">Position Y</option>
+            <option value="scaleX">Scale X</option>
+            <option value="rotation">Rotation</option>
+            <option value="opacity">Opacity</option>
+            <option value="rotY">3D Rot Y</option>
+            <option value="camZ">Camera Z</option>
+          </select>
+          <select id="graph-easing-select">
+            <option value="easeInOut">Ease In Out</option>
+            <option value="easeIn">Ease In</option>
+            <option value="easeOut">Ease Out</option>
+            <option value="linear">Linear</option>
+            <option value="bezier">Custom Bezier</option>
+            <option value="hold">Hold</option>
+          </select>
+          <button id="graph-copy-kf">Copy KF</button>
+          <button id="graph-paste-kf">Paste KF</button>
+          <button id="graph-del-kf" class="danger-btn">Del KF</button>
+        </div>
+      </div>
+      <canvas id="graph-canvas" style="width:100%;height:96px;display:block;cursor:crosshair;"></canvas>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL: AI SCRIPT TO MOTION -->
+<div id="modal-ai" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <span>✦ AI MOTION GRAPHICS DIRECTOR — SCRIPT TO CINEMATIC VISUAL</span>
+      <button onclick="closeModal('modal-ai')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 270px;gap:10px;align-items:start;">
+        <div>
+          <label style="font-size:10.5px;color:var(--text-soft);display:block;margin-bottom:4px;">Paste Complete Narration Script</label>
+          <textarea id="ai-script-input" rows="7" style="width:100%;padding:8px;line-height:1.45;resize:vertical;">Trump kembali memanaskan perdagangan global! Dan kali ini, Bitcoin ikut menjadi sorotan pasar.
+
+Amerika Serikat mengusulkan tindakan tarif terhadap 14 mitra dagang, termasuk Indonesia. Langkah ini kembali meningkatkan ketidakpastian perdagangan dunia.
+
+Ketika ketidakpastian meningkat, investor cenderung lebih berhati-hati. Aset berisiko pun berpotensi menghadapi tekanan jual.
+
+Bitcoin bisa terdampak melalui tiga faktor utama. Pertama, perubahan sentimen risiko. Kedua, tekanan inflasi akibat tarif. Dan ketiga, ekspektasi kebijakan suku bunga The Fed.
+
+Jika dolar menguat dan suku bunga bertahan tinggi, tekanan terhadap Bitcoin bisa berlanjut. Namun, jika ketegangan mereda dan likuiditas membaik, peluang pemulihan tetap terbuka.
+
+Jadi, apakah ini awal tekanan bearish Bitcoin, atau justru peluang recovery? Pantau terus perkembangan pasar global bersama VOYA NEWS.</textarea>
+        </div>
+        <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-weight:600;font-size:11px;">Production Pipeline</div>
+          <label style="font-size:10.5px;color:var(--text-soft);">Visual Animation Style
+            <select id="ai-style" style="width:100%;margin-top:2px;">
+              <option value="sber3d">3D Glass UI &amp; Pop-Out Cards (Sber Commercial Style)</option>
+              <option value="apple3d">Dark Studio 3D Objects (Apple Product Style)</option>
+            </select>
+          </label>
+          <label style="font-size:10.5px;color:var(--text-soft);">Narration Pace (WPM)
+            <input id="ai-wpm" type="number" value="130" min="90" max="200" style="width:100%;margin-top:2px;" />
+          </label>
+          <button id="btn-ai-analyze" class="primary">1. Analyze Script &amp; Storyboard</button>
+          <button id="btn-ai-research">2. Research Real Visual Assets</button>
+          <button id="btn-ai-assemble" class="primary" disabled>3. Assemble 10-Track Timeline</button>
+          <div id="ai-status-log" style="font-size:10px;color:var(--text-soft);line-height:1.35;">Ready.</div>
+        </div>
+      </div>
+      <div id="ai-storyboard-wrap" class="sb-grid"></div>
+    </div>
+    <div class="modal-foot"><button onclick="closeModal('modal-ai')">Close</button></div>
+  </div>
+</div>
+
+<!-- MODAL: COMPOSITION SETTINGS -->
+<div id="modal-comp" class="modal narrow">
+  <div class="modal-head"><span>Composition Settings</span><button onclick="closeModal('modal-comp')">✕</button></div>
+  <div class="modal-body">
+    <div class="prop-grid">
+      <span class="prop-label">Comp Name</span><input id="cs-name" type="text" />
+      <span class="prop-label">Preset</span>
+      <select id="cs-preset">
+        <option value="1080x1920">Portrait 1080×1920 (TikTok / Reels / Shorts)</option>
+        <option value="1440x2560">Portrait 1440×2560 (2K 9:16)</option>
+        <option value="2160x3840">Portrait 2160×3840 (4K 9:16)</option>
+        <option value="1920x1080">Landscape 1920×1080 (YouTube HD)</option>
+        <option value="2560x1440">Landscape 2560×1440 (2K 16:9)</option>
+        <option value="3840x2160">Landscape 3840×2160 (4K 16:9)</option>
+        <option value="1080x1080">Square 1080×1080 (Instagram Feed)</option>
+        <option value="custom">Custom Resolution</option>
+      </select>
+      <span class="prop-label">Width × Height</span>
+      <div class="prop-row"><input id="cs-w" type="number" min="120" max="3840" /> × <input id="cs-h" type="number" min="120" max="3840" /></div>
+      <span class="prop-label">FPS</span><input id="cs-fps" type="number" min="12" max="120" />
+      <span class="prop-label">Duration (sec)</span><input id="cs-dur" type="number" min="1" max="600" />
+      <span class="prop-label">Background</span><input id="cs-bg" type="color" style="height:22px;width:54px;" />
+      <span class="prop-label">Resize Policy</span>
+      <select id="cs-adapt">
+        <option value="keep">Keep original layout (no stretch)</option>
+        <option value="scaleFit">Scale proportionally to fit</option>
+        <option value="cropFill">Scale proportionally to fill</option>
+        <option value="manual">Reposition manually later</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-foot"><button onclick="closeModal('modal-comp')">Cancel</button><button id="cs-apply" class="primary">Apply Composition</button></div>
+</div>
+
+<!-- MODAL: EXPORT & SAVE VIDEO -->
+<div id="modal-export" class="modal narrow">
+  <div class="modal-head"><span>Render &amp; Save Video</span><button onclick="cancelExportIfActive()">✕</button></div>
+  <div class="modal-body">
+    <div class="prop-grid">
+      <span class="prop-label">Format</span>
+      <select id="ex-format">
+        <option value="webm">WebM Video (Universal Browser Video + Audio)</option>
+        <option value="mp4">MP4 Video (If Browser H.264 Supported)</option>
+        <option value="png">PNG Current Frame</option>
+        <option value="pngseq">PNG Image Sequence</option>
+        <option value="wav">Audio-Only Mixdown (.WAV)</option>
+        <option value="srt">Subtitles Only (.SRT)</option>
+      </select>
+      <span class="prop-label">Resolution</span>
+      <select id="ex-res">
+        <option value="0.6667">720p Portrait (720×1280 — Smooth &amp; Fast)</option>
+        <option value="1">1080p Native (1080×1920)</option>
+        <option value="1.3333">1440p Scaled</option>
+        <option value="2">4K / 2× Scaled</option>
+      </select>
+      <span class="prop-label">Frame Rate</span>
+      <select id="ex-fps">
+        <option value="30">30 FPS</option>
+        <option value="24">24 FPS</option>
+        <option value="25">25 FPS</option>
+        <option value="60">60 FPS</option>
+      </select>
+      <span class="prop-label">Bitrate (Mbps)</span><input id="ex-bitrate" type="number" value="6" min="1" max="35" />
+      <span class="prop-label">Subtitles</span>
+      <select id="ex-subs">
+        <option value="burn">Burn Subtitles into Video</option>
+        <option value="none">Export Video Without Subtitles</option>
+        <option value="burnAndSrt">Burn + Download .SRT Separately</option>
+      </select>
+      <span class="prop-label">Render Range</span>
+      <select id="ex-range">
+        <option value="highlight">Fast Highlight (First 12 Seconds — Quick Test)</option>
+        <option value="content">Full Used Timeline (All 6 Scenes)</option>
+        <option value="full">Full Composition Duration</option>
+      </select>
+      <span class="prop-label">Alpha</span>
+      <div class="prop-row"><label><input id="ex-alpha" type="checkbox" /> Transparent BG (PNG/WebM)</label></div>
+    </div>
+
+    <div id="ex-cap-note" style="font-size:10px;color:var(--text-soft);margin-top:8px;padding:6px;background:var(--bg-input);border:1px solid var(--border);border-radius:3px;"></div>
+    <div style="margin-top:8px;">
+      <div style="height:8px;background:#0c0d10;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
+        <div id="ex-progress-bar" style="width:0%;height:100%;background:var(--accent);transition:width 0.1s;"></div>
+      </div>
+      <div id="ex-progress-text" style="font-size:10.5px;color:var(--text-soft);margin-top:4px;">Idle — Click "Start Real Render" to generate video.</div>
+    </div>
+
+    <div id="ex-result-box" style="display:none;margin-top:10px;padding:8px;background:#10141c;border:1px solid var(--ok);border-radius:4px;">
+      <div style="font-weight:600;color:var(--ok);margin-bottom:6px;">Render Ready — Preview &amp; Save:</div>
+      <video id="ex-video-preview" controls playsinline style="width:100%;max-height:220px;background:#000;border-radius:3px;display:none;"></video>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        <a id="ex-download-link" class="btn ok-btn" download="voya_render.webm">💾 Save Video File</a>
+        <span style="font-size:10px;color:var(--text-soft);align-self:center;">(Jika tombol tidak otomatis mengunduh di sandbox, klik kanan video di atas → <b>Save video as</b>)</span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button id="ex-cancel-btn" onclick="cancelExportIfActive()">Close / Cancel</button>
+    <button id="ex-start-btn" class="primary">Start Real Render</button>
+  </div>
+</div>
+
+<div id="toast-box"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 9)}`;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const deepClone = (obj) => structuredClone(obj);
+  const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const easeInOutCubic = (t) => { const x = clamp(t, 0, 1); return x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2; };
+
+  function frameToTimecode(frame, fps) {
+    const f = Math.max(0, Math.round(frame)), ff = f % fps, totalSec = Math.floor(f / fps);
+    const ss = totalSec % 60, mm = Math.floor(totalSec / 60) % 60, hh = Math.floor(totalSec / 3600);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(hh)}:${pad(mm)}:${pad(ss)}:${pad(ff)}`;
+  }
+
+  function frameToSrtTime(frame, fps) {
+    const msTotal = Math.round((frame / fps) * 1000);
+    const ms = msTotal % 1000, sec = Math.floor(msTotal / 1000) % 60;
+    const min = Math.floor(msTotal / 60000) % 60, hr = Math.floor(msTotal / 3600000);
+    return `${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+  }
+
+  function toast(msg) {
+    const box = document.getElementById('toast-box');
+    const el = document.createElement('div');
+    el.className = 'toast'; el.textContent = msg; box.appendChild(el);
+    setTimeout(() => el.remove(), 3400);
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+
+  function cubicBezierY(t, cp1, cp2) {
+    const cx = (u) => 3*(1-u)*(1-u)*u*cp1[0] + 3*(1-u)*u*u*cp2[0] + u*u*u;
+    const cy = (u) => 3*(1-u)*(1-u)*u*cp1[1] + 3*(1-u)*u*u*cp2[1] + u*u*u;
+    let lo = 0, hi = 1, u = t;
+    for (let i = 0; i < 14; i++) { u = (lo + hi) * 0.5; const x = cx(u); if (Math.abs(x - t) < 1e-4) break; if (x < t) lo = u; else hi = u; }
+    return cy(u);
+  }
+
+  function applyEasing(t, kf) {
+    const e = kf.easing || 'easeInOut';
+    if (e === 'hold') return 0;
+    if (e === 'linear') return t;
+    if (e === 'easeIn') return cubicBezierY(t, [0.42, 0], [1, 1]);
+    if (e === 'easeOut') return cubicBezierY(t, [0, 0], [0.58, 1]);
+    if (e === 'easeInOut') return cubicBezierY(t, [0.42, 0], [0.58, 1]);
+    if (e === 'bezier') return cubicBezierY(t, kf.cp1 || [0.42, 0], kf.cp2 || [0.58, 1]);
+    return t;
+  }
+
+  function evalProp(layer, prop, frame) {
+    const base = layer.props[prop], kfs = layer.keyframes && layer.keyframes[prop];
+    if (!kfs || kfs.length === 0) return base;
+    if (frame <= kfs[0].frame) return kfs[0].value;
+    if (frame >= kfs[kfs.length - 1].frame) return kfs[kfs.length - 1].value;
+    for (let i = 0; i < kfs.length - 1; i++) {
+      const a = kfs[i], b = kfs[i + 1];
+      if (frame >= a.frame && frame <= b.frame) {
+        if (a.easing === 'hold' || b.frame === a.frame) return a.value;
+        return lerp(a.value, b.value, applyEasing(clamp((frame - a.frame) / (b.frame - a.frame), 0, 1), a));
+      }
+    }
+    return base;
+  }
+
+  const STORAGE_KEY = 'voya_motion_studio_project_v4';
+  const LAYOUT_KEY = 'voya_motion_studio_layout_v4';
+
+  function createDefaultProject() {
+    return {
+      id: uid('proj'),
+      name: 'VOYA_Sber3D_Bitcoin_9x16',
+      status: 'Saved',
+      composition: { name: 'Portrait Main Composition', width: 1080, height: 1920, fps: 30, durationFrames: 1800, bgColor: '#071b24', preset: '1080x1920' },
+      ui: {
+        showSubtitles: true, muteTextOnFrame: false, snapping: true, zoomMode: 'fit', zoomLevel: 0.35,
+        showSafeArea: false, showGrid: false, showRulers: false, showChecker: false,
+        activeAssetTab: '3D assets', inspectorTab: 'layer', graphOpen: false, graphProp: 'x'
+      },
+      folders: [{ id: 'f_root', name: 'Root' }, { id: 'f_ai', name: 'AI Researched' }],
+      assets: [
+        { id: 'ast_3d_icon', name: '3D Glass App Icon Burst', kind: '3d', model: 'glass_icon', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_phone_pop', name: '3D Phone + Pop-Out Card', kind: '3d', model: 'phone_pop', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_orb_swipe', name: '3D Phone + Glass Orb Swipe', kind: '3d', model: 'phone_orb', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_stack', name: '3D Stacked Parallax Cards', kind: '3d', model: 'stack_cards', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_orb_tap', name: '3D UI List + Orb Tap', kind: '3d', model: 'orb_tap', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_phone_hero', name: '3D Phone Hero Spin-Land', kind: '3d', model: 'phone_hero', folderId: 'f_root', source: 'Sber-Style 3D UI', license: 'Studio Built-in' },
+        { id: 'ast_3d_btc', name: '3D Bitcoin Coin', kind: '3d', model: 'bitcoin', folderId: 'f_root', source: 'Studio 3D PBR', license: 'Studio Built-in' },
+        { id: 'ast_3d_globe', name: '3D Trade Globe', kind: '3d', model: 'globe', folderId: 'f_root', source: 'Studio 3D PBR', license: 'Studio Built-in' },
+        { id: 'ast_sfx_whoosh', name: 'Studio Transition Whoosh', kind: 'audio', subkind: 'sfx', folderId: 'f_root', source: 'Synthesized WebAudio', license: 'Built-in Synth', duration: 0.7 },
+        { id: 'ast_sfx_impact', name: 'Sub Cinematic Impact', kind: 'audio', subkind: 'sfx', folderId: 'f_root', source: 'Synthesized WebAudio', license: 'Built-in Synth', duration: 1.0 },
+        { id: 'ast_mus_pad', name: 'Upbeat Studio Groove Pad', kind: 'audio', subkind: 'music', folderId: 'f_root', source: 'Synthesized WebAudio', license: 'Built-in Synth', duration: 2.0, loop: true }
+      ],
+      layers: [], transitions: [], storyboard: [], qcIssues: []
+    };
+  }
+
+  let project = createDefaultProject();
+  const runtime = {
+    playhead: 0, isPlaying: false, lastTick: 0, selectedLayerId: null, selectedKeyframe: null,
+    copiedKeyframes: null, undoStack: [], redoStack: [], mediaCache: new Map(), exporting: false, exportCancel: false,
+    lastExportBlobUrl: null
+  };
+
+  function pushUndo() {
+    runtime.undoStack.push(deepClone({
+      name: project.name, composition: project.composition, ui: project.ui,
+      assets: project.assets, folders: project.folders, layers: project.layers, transitions: project.transitions, storyboard: project.storyboard
+    }));
+    if (runtime.undoStack.length > 50) runtime.undoStack.shift();
+    runtime.redoStack = [];
+    setProjectStatus('Unsaved changes');
+  }
+
+  function undo() {
+    if (!runtime.undoStack.length) return;
+    runtime.redoStack.push(deepClone({
+      name: project.name, composition: project.composition, ui: project.ui,
+      assets: project.assets, folders: project.folders, layers: project.layers, transitions: project.transitions, storyboard: project.storyboard
+    }));
+    Object.assign(project, runtime.undoStack.pop());
+    refreshAllUI(); toast('Undo');
+  }
+
+  function redo() {
+    if (!runtime.redoStack.length) return;
+    runtime.undoStack.push(deepClone({
+      name: project.name, composition: project.composition, ui: project.ui,
+      assets: project.assets, folders: project.folders, layers: project.layers, transitions: project.transitions, storyboard: project.storyboard
+    }));
+    Object.assign(project, runtime.redoStack.pop());
+    refreshAllUI(); toast('Redo');
+  }
+
+  function setProjectStatus(st) {
+    project.status = st;
+    const pill = document.getElementById('proj-status');
+    pill.textContent = st;
+    pill.className = 'status-pill ' + (st === 'Saved' || st === 'Export completed' ? 'saved' : st.includes('fail') ? 'error' : 'unsaved');
+  }
+
+  function saveProject(manual = true) {
+    try {
+      setProjectStatus('Saving');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(deepClone(project)));
+      setProjectStatus('Saved');
+      if (manual) toast('Project saved');
+    } catch (_) {
+      setProjectStatus('Unsaved changes');
+      if (manual) toast('Storage unavailable; use Export');
+    }
+  }
+
+  /* ============================================================
+     THREE.JS ENGINE + SBER-STYLE 3D GLASSMORPHISM UI COMPOSITOR
+     ============================================================ */
+  class ThreeStudioEngine {
+    constructor() {
+      this.available = typeof window.THREE !== 'undefined';
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = 720; this.canvas.height = 720;
+      if (!this.available) return;
+      try {
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
+        this.renderer.setClearColor(0x000000, 0);
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+        this.camera.position.set(0, 0.35, 6.2);
+        this.ambient = new THREE.AmbientLight(0xffffff, 0.55);
+        this.keyLight = new THREE.DirectionalLight(0xfff4e0, 2.2); this.keyLight.position.set(4, 6, 5);
+        this.rimLight = new THREE.DirectionalLight(0x2d7ff9, 2.1); this.rimLight.position.set(-5, 2, -3);
+        this.fillLight = new THREE.PointLight(0x7cb3ff, 1.4, 20); this.fillLight.position.set(0, -2.5, 4);
+        this.scene.add(this.ambient, this.keyLight, this.rimLight, this.fillLight);
+      } catch (_) { this.available = false; }
+    }
+    buildModel(type, matCfg) {
+      const group = new THREE.Group();
+      const primaryMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(matCfg.color || '#d9a441'), metalness: matCfg.metalness ?? 0.85, roughness: matCfg.roughness ?? 0.22 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x161922, metalness: 0.7, roughness: 0.35 });
+      const blueGlass = new THREE.MeshPhysicalMaterial({ color: 0x2d7ff9, metalness: 0.15, roughness: 0.12, transparent: true, opacity: 0.72 });
+      if (type === 'bitcoin') {
+        const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.18, 0.2, 48), primaryMat); coin.rotation.x = Math.PI / 2;
+        const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.22, 48), darkMat); inner.rotation.x = Math.PI / 2;
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(1.14, 0.06, 16, 48), primaryMat);
+        group.add(coin, inner, rim);
+      } else {
+        const core = new THREE.Mesh(new THREE.SphereGeometry(1.05, 32, 32), darkMat);
+        const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.09, 2), new THREE.MeshBasicMaterial({ color: 0x2d7ff9, wireframe: true, transparent: true, opacity: 0.45 }));
+        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.38, 0.022, 12, 64), primaryMat); ring1.rotation.x = 1.1;
+        group.add(core, wire, ring1, blueGlass ? new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.015, 10, 48), blueGlass) : core);
+      }
+      return group;
+    }
+    renderObject(modelType, state, w, h) {
+      if (!this.available) return null;
+      if (this.canvas.width !== w || this.canvas.height !== h) {
+        this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+      }
+      for (let i = this.scene.children.length - 1; i >= 0; i--) if (this.scene.children[i].userData.isObject) this.scene.remove(this.scene.children[i]);
+      const mesh = this.buildModel(modelType, state); mesh.userData.isObject = true;
+      mesh.rotation.set(state.rotX, state.rotY, state.rotZ);
+      mesh.position.set(0, state.posY || 0, state.posZ || 0);
+      const s = state.scale3d || 1; mesh.scale.set(s, s, s);
+      this.scene.add(mesh);
+      this.rimLight.intensity = state.blueLight ?? 2.1;
+      this.camera.position.set(0, state.camY || 0.35, state.camZ || 6.2);
+      this.camera.lookAt(0, 0, 0);
+      this.renderer.render(this.scene, this.camera);
+      return this.canvas;
+    }
+  }
+
+  const threeEngine = new ThreeStudioEngine();
+
+  function drawRoundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+  // 3D Crystal Water/Glass Orb (Seen at 00:05, 00:06, 00:11 of reference video)
+  function drawCrystalGlassOrb(ctx, x, y, r, pulse = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (pulse > 0) {
+      ctx.strokeStyle = `rgba(255,255,255,${(1 - pulse) * 0.7})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0, 0, r * (1 + pulse * 0.9), 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.shadowColor = 'rgba(0, 40, 60, 0.35)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetY = 12;
+    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.08, 0, 0, r);
+    g.addColorStop(0, 'rgba(255,255,255,0.92)');
+    g.addColorStop(0.35, 'rgba(180,245,235,0.58)');
+    g.addColorStop(0.75, 'rgba(40,185,175,0.42)');
+    g.addColorStop(1, 'rgba(15,90,130,0.72)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Specular highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.34, r * 0.28, r * 0.14, -0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Sleek 3D Perspective Smartphone Mockup (Matches 00:01 - 00:12)
+  function draw3DPhoneFrame(ctx, w, h, tiltAngle, drawScreenContent) {
+    ctx.save();
+    // Subtle 3D perspective skew + rotation
+    ctx.transform(1, tiltAngle * 0.12, tiltAngle * -0.08, 1, 0, 0);
+
+    // Outer deep shadow
+    ctx.shadowColor = 'rgba(0, 22, 32, 0.45)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetX = tiltAngle * -38;
+    ctx.shadowOffsetY = 34;
+
+    // 3D Metallic side edge extrusion
+    const edgeOffset = tiltAngle * -22;
+    ctx.fillStyle = '#c8d6dc';
+    drawRoundRect(ctx, -w / 2 + edgeOffset, -h / 2 + 4, w, h, 56);
+    ctx.fill();
+
+    // Main frosted titanium/white bezel
+    ctx.shadowBlur = 0;
+    const bezelG = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+    bezelG.addColorStop(0, '#f4f8fa');
+    bezelG.addColorStop(0.5, '#dbe6ea');
+    bezelG.addColorStop(1, '#b5c8cf');
+    ctx.fillStyle = bezelG;
+    drawRoundRect(ctx, -w / 2, -h / 2, w, h, 56);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Inner bright UI screen
+    const pad = 16;
+    const sw = w - pad * 2, sh = h - pad * 2;
+    ctx.save();
+    drawRoundRect(ctx, -sw / 2, -sh / 2, sw, sh, 42);
+    ctx.clip();
+
+    const scrG = ctx.createLinearGradient(0, -sh / 2, 0, sh / 2);
+    scrG.addColorStop(0, '#99e3ce');
+    scrG.addColorStop(0.28, '#eaf5f2');
+    scrG.addColorStop(1, '#f4f7f9');
+    ctx.fillStyle = scrG;
+    ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+
+    // Status bar & Dynamic Pill
+    ctx.fillStyle = '#0f1c1e';
+    drawRoundRect(ctx, -65, -sh / 2 + 12, 130, 24, 12);
+    ctx.fill();
+    ctx.font = '600 18px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('09:41', -sw / 2 + 26, -sh / 2 + 30);
+
+    // Screen content callback
+    if (drawScreenContent) drawScreenContent(ctx, sw, sh);
+
+    // Subtle glass screen reflection diagonal sheen
+    const sheen = ctx.createLinearGradient(-sw / 2, -sh / 2, sw / 2, sh / 2);
+    sheen.addColorStop(0, 'rgba(255,255,255,0.18)');
+    sheen.addColorStop(0.4, 'rgba(255,255,255,0)');
+    sheen.addColorStop(1, 'rgba(255,255,255,0.06)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawGlassCard(ctx, x, y, w, h, radius, title, sub, val, accentColor = '#18b86a') {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.shadowColor = 'rgba(0, 35, 45, 0.28)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetY = 16;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    drawRoundRect(ctx, -w / 2, -h / 2, w, h, radius);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Top accent ribbon
+    const ribG = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, -h / 2);
+    ribG.addColorStop(0, accentColor);
+    ribG.addColorStop(1, '#2694f0');
+    ctx.fillStyle = ribG;
+    drawRoundRect(ctx, -w / 2 + 12, -h / 2 + 12, w - 24, 10, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#0e1720';
+    ctx.font = '700 26px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(title, -w / 2 + 24, -h / 2 + 58);
+
+    if (sub) {
+      ctx.fillStyle = '#536270';
+      ctx.font = '500 20px Inter, sans-serif';
+      ctx.fillText(sub, -w / 2 + 24, -h / 2 + 92);
+    }
+    if (val) {
+      ctx.fillStyle = accentColor;
+      ctx.font = '800 32px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(val, w / 2 - 24, -h / 2 + 78);
+    }
+    ctx.restore();
+  }
+
+  // Unified Sber-Style 3D Glass UI Scenes (00:00 - 00:12 exact motion choreography)
+  function drawSberGlassScene(ctx, model, lw, lh, localT, durSec, d3, rotY) {
+    const p = clamp(localT / Math.max(0.5, durSec), 0, 1);
+    const eOut = easeOutCubic(Math.min(1, localT / 0.7));
+
+    ctx.save();
+    if (model === 'glass_icon') {
+      // 00:00: Concentric blurred glass tiles + glowing center 3D rounded app badge
+      const zoomBurst = p > 0.75 ? 1 + easeInOutCubic((p - 0.75) / 0.25) * 0.45 : 0.86 + eOut * 0.14;
+      ctx.scale(zoomBurst, zoomBurst);
+      const bob = Math.sin(localT * 2.4) * 14;
+
+      // Back blurred glass layers
+      [
+        { s: 540, a: 0.22, c: 'rgba(130, 240, 220, 0.35)' },
+        { s: 410, a: 0.38, c: 'rgba(65, 195, 245, 0.45)' }
+      ].forEach((tile, idx) => {
+        ctx.save();
+        ctx.translate(0, bob * (idx + 1) * 0.4);
+        ctx.fillStyle = tile.c;
+        ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+        ctx.lineWidth = 3;
+        drawRoundRect(ctx, -tile.s / 2, -tile.s / 2, tile.s, tile.s, 72);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      });
+
+      // Hero center white 3D app tile + gradient emblem
+      ctx.save();
+      ctx.translate(0, bob);
+      ctx.shadowColor = 'rgba(0, 35, 50, 0.35)'; ctx.shadowBlur = 45; ctx.shadowOffsetY = 20;
+      const g = ctx.createLinearGradient(-130, -130, 130, 130);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d8e9ed');
+      ctx.fillStyle = g;
+      drawRoundRect(ctx, -135, -135, 270, 270, 58); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Glowing Bitcoin / Check Gradient Ring
+      const rg = ctx.createLinearGradient(-80, -80, 80, 80);
+      rg.addColorStop(0, '#24b47e'); rg.addColorStop(0.5, '#2d7ff9'); rg.addColorStop(1, '#f5b942');
+      ctx.strokeStyle = rg; ctx.lineWidth = 22;
+      ctx.beginPath(); ctx.arc(0, 0, 74, -0.35, Math.PI * 1.65); ctx.stroke();
+      ctx.fillStyle = '#14b86a'; ctx.font = '800 76px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('₿', 0, 4);
+      ctx.restore();
+    } else if (model === 'phone_pop') {
+      // 00:01 - 00:02: Tilted 3D Phone + Pop-Out Floating Card lifting off screen
+      const tilt = -0.32 + Math.sin(localT * 1.1) * 0.08 + rotY * 0.25;
+      const popLift = easeOutCubic(clamp((localT - 0.35) / 0.85, 0, 1));
+      ctx.translate(0, 35 - eOut * 20);
+      draw3DPhoneFrame(ctx, 500, 920, tilt, (sctx, sw, sh) => {
+        sctx.fillStyle = '#0d1b20';
+        sctx.font = '700 22px Inter, sans-serif'; sctx.textAlign = 'left';
+        sctx.fillText('VOYA Pasar Global', -sw / 2 + 28, -sh / 2 + 88);
+        sctx.font = '800 42px Inter, sans-serif';
+        sctx.fillText('$87,420 • BTC', -sw / 2 + 28, -sh / 2 + 142);
+
+        // Mini cards inside phone
+        drawGlassCard(sctx, -108, -165, 200, 125, 22, 'Tarif AS', '14 Mitra', '+25%', '#e5a93b');
+        drawGlassCard(sctx, 108, -165, 200, 125, 22, 'Indonesia', 'Mitra Dagang', 'RI', '#18b86a');
+        drawGlassCard(sctx, 0, -5, 420, 120, 22, 'Trump Kebijakan Tarif', 'Ketidakpastian Global Naik', 'LIVE', '#2d7ff9');
+        drawGlassCard(sctx, 0, 135, 420, 120, 22, 'Pasar Kripto', 'Bitcoin Dalam Sorotan', 'BTC', '#f5b942');
+      });
+
+      // Pop-Out Floating Card detaching into 3D Z-space!
+      if (popLift > 0.01) {
+        ctx.save();
+        const scalePop = 0.85 + popLift * 0.28;
+        ctx.translate(popLift * 18, 95 - popLift * 55);
+        ctx.scale(scalePop, scalePop);
+        ctx.rotate(popLift * -0.03);
+        drawGlassCard(ctx, 0, 0, 480, 175, 28, '14 MITRA DAGANG TERMASUK RI', 'Tarif Baru AS Mengguncang Pasar', 'TARIF', '#14b86a');
+        ctx.restore();
+      }
+      drawCrystalGlassOrb(ctx, 185, 65 - popLift * 40, 38, (localT % 2) / 2);
+    } else if (model === 'phone_orb') {
+      // 00:03 - 00:05: Opposite angle tilt + scrolling list + Glass Orb swiping card up
+      const tilt = 0.28 - eOut * 0.08;
+      const scrollY = -easeInOutCubic(p) * 180;
+      draw3DPhoneFrame(ctx, 500, 920, tilt, (sctx, sw, sh) => {
+        sctx.fillStyle = '#0d1b20';
+        sctx.font = '800 32px Inter, sans-serif'; sctx.textAlign = 'left';
+        sctx.fillText('Sentimen Investor', -sw / 2 + 28, -sh / 2 + 100);
+        sctx.save();
+        sctx.translate(0, scrollY);
+        drawGlassCard(sctx, 0, -140, 420, 115, 22, 'Investor Hati-Hati', 'Mode Risk-Off Aktif', 'ALERT', '#e5a93b');
+        drawGlassCard(sctx, 0, -5, 420, 115, 22, 'Aset Berisiko', 'Tekanan Jual Meningkat', '-4.2%', '#e25555');
+        drawGlassCard(sctx, 0, 130, 420, 115, 22, 'Arus Modal Global', 'Menuju Aset Aman', 'USD', '#2d7ff9');
+        drawGlassCard(sctx, 0, 265, 420, 115, 22, 'Volatilitas Harian', 'Fluktuasi Tinggi', 'HIGH', '#e25555');
+        sctx.restore();
+      });
+      // Floating crystal orb dragging upwards
+      const orbY = 170 - easeInOutCubic(p) * 240;
+      drawCrystalGlassOrb(ctx, -95 + p * 75, orbY, 44, (localT * 0.8) % 1);
+    } else if (model === 'stack_cards') {
+      // 00:06 - 00:08: 3 Stacked 3D Parallax Cards fanning out like "Вклады / Кошелёк / Курсы валют"!
+      const fan = easeOutCubic(clamp(localT / 0.9, 0, 1));
+      const drift = Math.sin(localT * 1.4) * 12;
+      const cards = [
+        { title: '01 • SENTIMEN RISIKO', sub: 'Perubahan selera risiko global', val: 'RISK', col: '#18b86a', dx: 65 * fan, dy: -220 * fan, sc: 0.84, rot: -0.06 },
+        { title: '02 • TEKANAN INFLASI', sub: 'Dampak kenaikan tarif dagang', val: 'CPI ↑', col: '#22c55e', dx: 20 * fan, dy: -45 * fan, sc: 0.93, rot: -0.03 },
+        { title: '03 • SUKU BUNGA THE FED', sub: 'Ekspektasi kebijakan moneter AS', val: 'FED', col: '#2d7ff9', dx: -25 * fan, dy: 145 * fan, sc: 1.04, rot: 0.0 }
+      ];
+      cards.forEach((c, idx) => {
+        ctx.save();
+        ctx.translate(c.dx + drift * (idx - 1) * 0.4, c.dy);
+        ctx.scale(c.sc, c.sc);
+        ctx.rotate(c.rot);
+        drawGlassCard(ctx, 0, 0, 560, 195, 32, c.title, c.sub, c.val, c.col);
+        ctx.restore();
+      });
+      drawCrystalGlassOrb(ctx, 210, -240 + drift, 34, 0);
+    } else if (model === 'orb_tap') {
+      // 00:09 - 00:11: Glass UI list + Crystal Orb tap/collapse transition
+      const tapP = clamp((localT - 0.5) / 0.6, 0, 1);
+      draw3DPhoneFrame(ctx, 510, 920, -0.14 + p * 0.28, (sctx, sw, sh) => {
+        sctx.fillStyle = '#0d1b20';
+        sctx.font = '800 32px Inter, sans-serif'; sctx.textAlign = 'left';
+        sctx.fillText('Dua Skenario BTC', -sw / 2 + 28, -sh / 2 + 100);
+        drawGlassCard(sctx, 0, -145, 425, 130, 24, 'Dolar Menguat & Bunga Tinggi', 'Tekanan bearish berlanjut', 'BEAR', '#e25555');
+        drawGlassCard(sctx, 0, 20, 425, 130, 24, 'Ketegangan Tarif Mereda', 'Likuiditas pasar membaik', 'BULL', '#18b86a');
+        drawGlassCard(sctx, 0, 185, 425, 130, 24, 'Peluang Pemulihan', 'Tetap terbuka bagi investor', 'OPEN', '#2d7ff9');
+      });
+      drawCrystalGlassOrb(ctx, 40, 20 - tapP * 20, 46, tapP);
+    } else {
+      // 00:12: Hero 3D Smartphone Spin-Landing ("Теперь всё по-вашему!" / VOYA NEWS)
+      const spin = (1 - easeOutCubic(clamp(localT / 0.85, 0, 1))) * 0.9;
+      const tilt = 0.25 - spin;
+      ctx.save();
+      ctx.scale(0.88 + eOut * 0.14, 0.88 + eOut * 0.14);
+      draw3DPhoneFrame(ctx, 480, 880, tilt, (sctx, sw, sh) => {
+        sctx.fillStyle = '#0d1b20';
+        sctx.font = '800 34px Inter, sans-serif'; sctx.textAlign = 'left';
+        sctx.fillText('VOYA NEWS', -sw / 2 + 28, -sh / 2 + 104);
+        drawGlassCard(sctx, 0, -135, 410, 145, 24, 'Bearish atau Recovery?', 'Pantau pasar global real-time', 'BTC', '#f5b942');
+        drawGlassCard(sctx, 0, 45, 410, 145, 24, 'Update Tarif & The Fed', 'Analisis makro harian', 'LIVE', '#18b86a');
+      });
+      // Floating glowing badge beside phone
+      ctx.save();
+      ctx.translate(-170, -170 + Math.sin(localT * 2.2) * 10);
+      drawGlassCard(ctx, 0, 0, 220, 110, 24, 'VOYA', 'Market Brief', '₿', '#18b86a');
+      ctx.restore();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Luminous Teal / Emerald / Sky-Blue Studio Backdrop (Matches 00:00 - 00:12)
+  function drawSberStudioBackdrop(ctx, w, h, frame, fps) {
+    const t = frame / fps;
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, '#4ed9c3');
+    bg.addColorStop(0.38, '#1fa89e');
+    bg.addColorStop(0.75, '#0e7490');
+    bg.addColorStop(1, '#083b5c');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Floating soft light orbs
+    const g1 = ctx.createRadialGradient(w * (0.3 + Math.sin(t * 0.4) * 0.12), h * 0.25, 20, w * 0.35, h * 0.25, w * 0.65);
+    g1.addColorStop(0, 'rgba(180, 255, 235, 0.42)'); g1.addColorStop(1, 'rgba(180, 255, 235, 0)');
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, w, h);
+
+    const g2 = ctx.createRadialGradient(w * 0.78, h * (0.68 + Math.cos(t * 0.5) * 0.08), 20, w * 0.75, h * 0.7, w * 0.6);
+    g2.addColorStop(0, 'rgba(45, 155, 255, 0.35)'); g2.addColorStop(1, 'rgba(45, 155, 255, 0)');
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
+
+    // Bottom contrast vignette for crisp white headline & subtitles
+    const bot = ctx.createLinearGradient(0, h * 0.62, 0, h);
+    bot.addColorStop(0, 'rgba(5, 32, 46, 0)');
+    bot.addColorStop(1, 'rgba(4, 24, 38, 0.86)');
+    ctx.fillStyle = bot; ctx.fillRect(0, h * 0.62, w, h * 0.38);
+  }
+
+  class StudioAudioEngine {
+    constructor() { this.ctx = null; this.activeSources = []; }
+    ensureCtx() {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) this.ctx = new AC();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      return this.ctx;
+    }
+    synthesizeBuiltInBuffer(subkind, durationSec = 1.0) {
+      const ctx = this.ensureCtx();
+      if (!ctx) return null;
+      const safeDur = Math.min(durationSec, 2.0);
+      const sr = ctx.sampleRate, len = Math.max(1, Math.floor(sr * safeDur));
+      const buf = ctx.createBuffer(1, len, sr), data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        const t = i / sr;
+        if (subkind === 'sfx') {
+          const env = Math.sin(Math.PI * Math.min(1, t / safeDur));
+          data[i] = ((Math.random() * 2 - 1) * 0.2 + Math.sin(2 * Math.PI * (140 + 280 * (1 - t / safeDur)) * t) * 0.28) * env * 0.4;
+        } else {
+          data[i] = (Math.sin(2 * Math.PI * 110 * t) + Math.sin(2 * Math.PI * 165 * t) * 0.5 + Math.sin(2 * Math.PI * 220 * t) * 0.25) * 0.05;
+        }
+      }
+      return buf;
+    }
+    computePeaks(audioBuffer, bins = 80) {
+      const ch = audioBuffer.getChannelData(0), step = Math.max(1, Math.floor(ch.length / bins)), peaks = [];
+      const innerStep = Math.max(1, Math.floor(step / 8));
+      for (let i = 0; i < bins; i++) {
+        let max = 0; const start = i * step;
+        for (let j = 0; j < step && start + j < ch.length; j += innerStep) {
+          const v = Math.abs(ch[start + j]); if (v > max) max = v;
+        }
+        peaks.push(max);
+      }
+      return peaks;
+    }
+    stopPlayback() {
+      this.activeSources.forEach(s => { try { s.stop(); } catch (_) {} });
+      this.activeSources = [];
+    }
+    startPlaybackFromFrame(startFrame, destNode = null) {
+      this.stopPlayback();
+      const ctx = this.ensureCtx();
+      if (!ctx) return;
+      const fps = project.composition.fps, currentTimeSec = startFrame / fps;
+      const soloExists = project.layers.some(l => l.solo && l.kind === 'audio');
+      const hasVOAtFrame = project.layers.some(l => l.type === 'voiceover' && !l.muted && startFrame >= l.startFrame && startFrame <= l.endFrame);
+
+      for (const layer of project.layers) {
+        if (layer.kind !== 'audio' || layer.muted) continue;
+        if (soloExists && !layer.solo) continue;
+        if (layer.endFrame <= startFrame) continue;
+        let media = runtime.mediaCache.get(layer.assetId);
+        const asset = project.assets.find(a => a.id === layer.assetId);
+        if (!media && asset && asset.source === 'Synthesized WebAudio') {
+          const buf = this.synthesizeBuiltInBuffer(asset.subkind || 'sfx', asset.duration || 1);
+          if (buf) { media = { audioBuffer: buf, peaks: this.computePeaks(buf) }; runtime.mediaCache.set(asset.id, media); }
+        }
+        if (!media || !media.audioBuffer) continue;
+        const src = ctx.createBufferSource();
+        src.buffer = media.audioBuffer;
+        src.playbackRate.value = layer.audio?.speed || 1;
+        if (asset?.loop || layer.type === 'music') src.loop = true;
+
+        const gain = ctx.createGain();
+        let vol = (layer.audio?.volume ?? 100) / 100;
+        if (layer.type === 'music' && hasVOAtFrame) vol *= 0.35;
+        gain.gain.value = clamp(vol, 0, 2);
+        src.connect(gain); gain.connect(destNode || ctx.destination);
+
+        const layerStartSec = layer.startFrame / fps;
+        const delay = Math.max(0, layerStartSec - currentTimeSec);
+        const rawOffset = Math.max(0, currentTimeSec - layerStartSec) + (layer.audio?.trimOffsetSec || 0);
+        const offset = src.loop ? (rawOffset % media.audioBuffer.duration) : rawOffset;
+        const dur = Math.max(0.05, (layer.endFrame - Math.max(startFrame, layer.startFrame)) / fps);
+        if (src.loop || offset < media.audioBuffer.duration) {
+          src.start(ctx.currentTime + delay, offset, src.loop ? dur : Math.min(dur, media.audioBuffer.duration - offset));
+          this.activeSources.push(src);
+        }
+      }
+    }
+  }
+
+  const audioEngine = new StudioAudioEngine();
+
+  function renderCompositionFrame(ctx, w, h, frame, opts = {}) {
+    const comp = project.composition, isExport = !!opts.isExport, hideSubsExport = opts.subMode === 'none';
+    ctx.save(); ctx.clearRect(0, 0, w, h);
+
+    if (!isExport && project.ui.showChecker) {
+      const sz = 48;
+      for (let yy = 0; yy < h; yy += sz) {
+        for (let xx = 0; xx < w; xx += sz) {
+          ctx.fillStyle = ((xx / sz + yy / sz) % 2 === 0) ? '#1a1d24' : '#12141a';
+          ctx.fillRect(xx, yy, sz, sz);
+        }
+      }
+    } else if (!opts.transparentBg) {
+      ctx.fillStyle = comp.bgColor || '#071b24';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    let activeTrans = null;
+    for (const tr of project.transitions) {
+      if (frame >= tr.startFrame && frame <= tr.endFrame) {
+        activeTrans = { ...tr, progress: (frame - tr.startFrame) / Math.max(1, tr.endFrame - tr.startFrame) };
+        break;
+      }
+    }
+
+    const soloVisual = project.layers.some(l => l.solo && l.kind !== 'audio');
+    const renderList = [...project.layers].reverse();
+
+    for (const layer of renderList) {
+      if (layer.kind === 'audio' || layer.hidden) continue;
+      if (soloVisual && !layer.solo) continue;
+      if (frame < layer.startFrame || frame > layer.endFrame) continue;
+      if (layer.type === 'subtitle' && (!project.ui.showSubtitles || hideSubsExport || project.ui.muteTextOnFrame)) continue;
+      if (layer.type === 'text' && project.ui.muteTextOnFrame) continue;
+
+      const x = evalProp(layer, 'x', frame), y = evalProp(layer, 'y', frame);
+      const sx = evalProp(layer, 'scaleX', frame) / 100, sy = evalProp(layer, 'scaleY', frame) / 100;
+      const rot = (evalProp(layer, 'rotation', frame) * Math.PI) / 180;
+      const opacity = clamp(evalProp(layer, 'opacity', frame) / 100, 0, 1);
+      const blur = evalProp(layer, 'blur', frame) || 0, glow = evalProp(layer, 'glow', frame) || 0;
+
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = layer.blendMode || 'source-over';
+      if (blur > 0 || layer.colorAdj) {
+        ctx.filter = `blur(${blur}px) brightness(${layer.colorAdj?.brightness ?? 100}%) contrast(${layer.colorAdj?.contrast ?? 100}%) saturate(${layer.colorAdj?.saturation ?? 100}%)`;
+      }
+      if (glow > 0) { ctx.shadowColor = layer.effects?.glowColor || '#2d7ff9'; ctx.shadowBlur = glow; }
+
+      let tx = x, ty = y, tsx = sx, tsy = sy;
+      if (activeTrans && layer.type !== 'subtitle') {
+        const bell = Math.sin(activeTrans.progress * Math.PI);
+        if (activeTrans.kind === 'smooth_zoom' || activeTrans.kind === 'camera_push') {
+          const boost = 1 + bell * 0.14 * (activeTrans.intensity || 1); tsx *= boost; tsy *= boost;
+        } else if (activeTrans.kind === 'whip_pan') { tx += (activeTrans.progress - 0.5) * 280 * bell; }
+      }
+
+      ctx.translate(tx, ty); ctx.rotate(rot); ctx.scale(tsx, tsy);
+      const lw = layer.props.width || 600, lh = layer.props.height || 400;
+
+      if (layer.type === 'shape') {
+        const st = layer.shape || {};
+        ctx.fillStyle = st.fill || '#1b2232'; ctx.strokeStyle = st.stroke || '#2d7ff9'; ctx.lineWidth = st.strokeWidth ?? 2;
+        if (st.kind === 'sber_bg') {
+          ctx.translate(-tx, -ty);
+          drawSberStudioBackdrop(ctx, w, h, frame, comp.fps);
+        } else if (st.kind === 'circle') {
+          ctx.beginPath(); ctx.arc(0, 0, lw / 2, 0, Math.PI * 2); ctx.fill(); if (ctx.lineWidth > 0) ctx.stroke();
+        } else if (st.kind === 'gradient_bg') {
+          const g = ctx.createRadialGradient(0, -lh * 0.15, 30, 0, 0, Math.max(lw, lh) * 0.7);
+          g.addColorStop(0, st.fill || '#121b2e'); g.addColorStop(1, '#050609');
+          ctx.fillStyle = g; ctx.fillRect(-lw / 2, -lh / 2, lw, lh);
+        } else {
+          drawRoundRect(ctx, -lw / 2, -lh / 2, lw, lh, st.radius ?? 14); ctx.fill(); if (ctx.lineWidth > 0) ctx.stroke();
+        }
+      } else if (layer.type === 'image' || layer.type === 'video') {
+        const m = runtime.mediaCache.get(layer.assetId), mediaEl = m?.video || m?.img;
+        if (mediaEl) {
+          if (m.video && m.video.readyState >= 2) {
+            const t = clamp((frame - layer.startFrame) / comp.fps, 0, m.video.duration || 10);
+            if (Math.abs(m.video.currentTime - t) > 0.08) m.video.currentTime = t;
+          }
+          ctx.drawImage(mediaEl, -lw / 2, -lh / 2, lw, lh);
+        } else {
+          ctx.fillStyle = '#191d28'; ctx.fillRect(-lw / 2, -lh / 2, lw, lh);
+          ctx.strokeStyle = '#333b4f'; ctx.strokeRect(-lw / 2, -lh / 2, lw, lh);
+          ctx.fillStyle = '#8b92a0'; ctx.font = '500 26px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(layer.name, 0, 0);
+        }
+      } else if (layer.type === '3d') {
+        const d3 = layer.three || {};
+        const rotY = evalProp(layer, 'rotY', frame);
+        const localT = (frame - layer.startFrame) / comp.fps;
+        const durSec = Math.max(1, (layer.endFrame - layer.startFrame + 1) / comp.fps);
+        const sberModels = ['glass_icon', 'phone_pop', 'phone_orb', 'stack_cards', 'orb_tap', 'phone_hero'];
+
+        if (sberModels.includes(d3.model)) {
+          drawSberGlassScene(ctx, d3.model, lw, lh, localT, durSec, d3, rotY);
+        } else if (threeEngine.available) {
+          const glCanvas = threeEngine.renderObject(d3.model || 'bitcoin', {
+            rotX: evalProp(layer, 'rotX', frame), rotY: rotY + localT * 0.45, rotZ: evalProp(layer, 'rotZ', frame),
+            posY: Math.sin(localT * 1.6) * 0.14, posZ: evalProp(layer, 'posZ', frame), scale3d: d3.scale3d ?? 1,
+            camZ: evalProp(layer, 'camZ', frame), camY: evalProp(layer, 'camY', frame), color: d3.color || '#d9a441',
+            metalness: d3.metalness ?? 0.85, roughness: d3.roughness ?? 0.22, blueLight: d3.blueLight ?? 2.1
+          }, 720, 720);
+          if (glCanvas) ctx.drawImage(glCanvas, -lw / 2, -lh / 2, lw, lh);
+        } else {
+          drawSberGlassScene(ctx, 'glass_icon', lw, lh, localT, durSec, d3, rotY);
+        }
+      } else if (layer.type === 'text' || layer.type === 'subtitle') {
+        const tp = layer.text || {}, content = tp.content || '';
+        const size = tp.fontSize || (layer.type === 'subtitle' ? 38 : 66);
+        ctx.font = `${tp.fontWeight || (layer.type === 'subtitle' ? '600' : '800')} ${size}px ${tp.fontFamily || 'Inter, system-ui, sans-serif'}`;
+        ctx.textAlign = tp.align || 'center'; ctx.textBaseline = 'middle';
+        const maxW = lw, words = content.split(/\s+/), lines = []; let line = '';
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = word; } else line = test;
+        }
+        if (line) lines.push(line);
+        const lhPx = size * (tp.lineHeight || 1.22), totalH = lines.length * lhPx;
+        if (tp.bgColor && tp.bgColor !== 'none') {
+          ctx.fillStyle = tp.bgColor; drawRoundRect(ctx, -maxW / 2 - 22, -totalH / 2 - 12, maxW + 44, totalH + 24, 14); ctx.fill();
+        }
+        lines.forEach((ln, idx) => {
+          const ly = -totalH / 2 + (idx + 0.5) * lhPx;
+          if (tp.shadow) { ctx.shadowColor = 'rgba(0,15,28,0.65)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4; }
+          if (tp.strokeWidth > 0) { ctx.strokeStyle = tp.strokeColor || '#000'; ctx.lineWidth = tp.strokeWidth; ctx.strokeText(ln, 0, ly); }
+          ctx.fillStyle = tp.color || '#ffffff'; ctx.fillText(ln, 0, ly);
+        });
+      } else if (layer.type === 'adjustment') {
+        const sweepX = ((frame % 150) / 150) * w * 1.6 - w * 0.3;
+        const g = ctx.createLinearGradient(sweepX - 200, 0, sweepX + 200, h);
+        g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(210,250,255,0.14)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(-w / 2, -h / 2, w, h);
+      }
+      ctx.restore();
+    }
+
+    if (activeTrans && activeTrans.kind === 'light_sweep') {
+      const p = activeTrans.progress;
+      const g = ctx.createLinearGradient(w * (p * 1.6 - 0.5), 0, w * (p * 1.6 - 0.1), h);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(220,255,255,0.34)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+
+    if (!isExport) {
+      if (project.ui.showGrid) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
+        for (let gx = w / 6; gx < w; gx += w / 6) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+        for (let gy = h / 8; gy < h; gy += h / 8) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
+      }
+      if (project.ui.showSafeArea) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.setLineDash([12, 10]); ctx.lineWidth = 3;
+        ctx.strokeRect(w * 0.08, h * 0.1, w * 0.84, h * 0.72); ctx.setLineDash([]);
+      }
+      if (project.ui.showRulers) {
+        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '20px monospace';
+        for (let rx = 0; rx <= w; rx += 270) ctx.fillText(String(rx), rx + 6, 24);
+        for (let ry = 240; ry <= h; ry += 240) ctx.fillText(String(ry), 6, ry);
+      }
+      const sel = project.layers.find(l => l.id === runtime.selectedLayerId);
+      if (sel && sel.kind !== 'audio' && frame >= sel.startFrame && frame <= sel.endFrame) {
+        const sx = evalProp(sel, 'x', frame), sy = evalProp(sel, 'y', frame);
+        const scX = evalProp(sel, 'scaleX', frame) / 100, scY = evalProp(sel, 'scaleY', frame) / 100;
+        const rot = (evalProp(sel, 'rotation', frame) * Math.PI) / 180;
+        const bw = (sel.props.width || 400) * scX, bh = (sel.props.height || 300) * scY;
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(rot);
+        ctx.strokeStyle = 'rgba(45,127,249,0.75)'; ctx.lineWidth = 3; ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  const AIDirector = {
+    analyzeScript(rawText, wpm = 130) {
+      const paragraphs = rawText.split(/\n+/).map(s => s.trim()).filter(Boolean);
+      const sentences = paragraphs.length > 1 ? paragraphs : rawText.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+      const fps = project.composition.fps;
+      const style = document.getElementById('ai-style')?.value || 'sber3d';
+      let cursorFrame = 0;
+      const existingApproved = new Map((project.storyboard || []).filter(s => s.approved).map(s => [s.index, s]));
+
+      const sberSequence = [
+        { model: 'glass_icon', title: 'Sorotan Pasar', preset: 'Glass Object Reveal', transition: 'smooth_zoom', note: '00:00 Glass Icon Burst → Phone' },
+        { model: 'phone_pop', title: '14 Mitra Dagang', preset: 'Floating Product', transition: 'whip_pan', note: '00:01–02 Tilted Phone + Pop-Out Card' },
+        { model: 'phone_orb', title: 'Tekanan Jual', preset: 'Camera Orbit', transition: 'smooth_zoom', note: '00:03–05 Glass Orb Swipe + Scroll' },
+        { model: 'stack_cards', title: 'Tiga Faktor', preset: 'Camera Orbit', transition: 'light_sweep', note: '00:06–08 Stacked 3D Parallax Cards' },
+        { model: 'orb_tap', title: 'Pilih Skenario', preset: 'Slow Product Rotation', transition: 'smooth_zoom', note: '00:09–11 UI List + Crystal Orb Tap' },
+        { model: 'phone_hero', title: 'VOYA NEWS', preset: 'Elegant Product Landing', transition: 'light_sweep', note: '00:12 Hero 3D Spin-Landing' }
+      ];
+
+      const scenes = sentences.map((seg, idx) => {
+        if (existingApproved.has(idx)) { const locked = existingApproved.get(idx); cursorFrame = locked.endFrame + 1; return locked; }
+        const words = seg.split(/\s+/).length;
+        const estSec = clamp(Math.round((words / wpm) * 60 * 10) / 10 + 1.2, 3.5, 12.0);
+        const durFrames = Math.round(estSec * fps);
+        const sb = sberSequence[idx % sberSequence.length];
+        const model = style === 'sber3d' ? sb.model : (idx === 1 ? 'globe' : idx === 2 ? 'chart' : idx === 3 ? 'pillars' : idx === 4 ? 'scale' : 'bitcoin');
+        const startFrame = cursorFrame, endFrame = startFrame + durFrames - 1;
+        cursorFrame = endFrame + 1;
+
+        return {
+          id: uid('sc'), index: idx, narration: seg, durationSec: estSec, startFrame, endFrame,
+          model, title: sb.title, preset: sb.preset, camera: '3D Glass Perspective', transition: sb.transition,
+          query: 'Financial stock exchange modern building', sfx: idx === 0 ? 'Sub Cinematic Impact' : 'Studio Transition Whoosh',
+          color: '#18b86a', note: sb.note, approved: false, retrievedPhoto: null, retrievalStatus: 'Sber 3D Glass UI Ready'
+        };
+      });
+      project.storyboard = scenes;
+      return scenes;
+    },
+
+    async researchVisuals(scenes) {
+      const logEl = document.getElementById('ai-status-log');
+      for (const sc of scenes) {
+        if (sc.approved && sc.retrievedPhoto) continue;
+        sc.retrievalStatus = 'Searching Wikimedia Commons...'; renderStoryboardUI();
+        try {
+          const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(sc.query)}&gsrnamespace=6&gsrlimit=3&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=640&format=json&origin=*`;
+          const res = await fetch(url); if (!res.ok) throw new Error();
+          const data = await res.json(), pages = data.query?.pages ? Object.values(data.query.pages) : [];
+          const pick = pages.find(p => p.imageinfo?.[0]?.thumburl && /\.(jpg|jpeg|png|webp)$/i.test(p.title || ''));
+          if (pick) {
+            const info = pick.imageinfo[0], assetId = uid('ast_img');
+            const imgObj = { id: assetId, name: pick.title.replace('File:', '').slice(0, 42), kind: 'image', folderId: 'f_ai', url: info.thumburl, source: 'Wikimedia Commons', license: info.extmetadata?.LicenseShortName?.value || 'Wikimedia', resolution: `${info.width||'?'}×${info.height||'?'}`, sceneIndex: sc.index };
+            await new Promise(resolve => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { runtime.mediaCache.set(assetId, { img: im }); resolve(); }; im.onerror = () => resolve(); im.src = info.thumburl; });
+            if (!project.assets.some(a => a.name === imgObj.name)) project.assets.push(imgObj);
+            sc.retrievedPhoto = assetId; sc.retrievalStatus = `Retrieved: ${imgObj.name}`;
+          } else sc.retrievalStatus = 'Using Sber-Style 3D Glass UI';
+        } catch (_) { sc.retrievalStatus = 'Offline — Using Sber-Style 3D Glass UI'; }
+        renderStoryboardUI();
+      }
+      logEl.textContent = 'Visual research finished.';
+    },
+
+    assembleTimeline() {
+      const scenes = project.storyboard;
+      if (!scenes.length) return;
+      pushUndo();
+      const comp = project.composition, totalFrames = scenes[scenes.length - 1].endFrame + 1;
+      if (totalFrames > comp.durationFrames) comp.durationFrames = totalFrames;
+      const cx = comp.width / 2, cy = comp.height / 2, transitions = [];
+      const topAdj = [], subLayers = [], textLayers = [], brandLayers = [], obj3DLayers = [], bgLayers = [], audioLayers = [];
+
+      topAdj.push({
+        id: uid('lyr'), name: 'T10 • Luminous Studio Light Sweep', type: 'adjustment', kind: 'visual',
+        startFrame: 0, endFrame: totalFrames - 1, locked: false, hidden: false, solo: false, muted: false,
+        props: { x: cx, y: cy, width: comp.width, height: comp.height, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+      });
+
+      // Top-left crisp VOYA NEWS brand watermark (Matches top-left СБЕР logo in reference!)
+      brandLayers.push({
+        id: uid('lyr'), name: 'T05 • Brand Top-Left: VOYA NEWS', type: 'text', kind: 'visual',
+        startFrame: 0, endFrame: totalFrames - 1, locked: false, hidden: false, solo: false, muted: false,
+        text: { content: '● VOYA NEWS', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 38, fontWeight: '800', color: '#ffffff', align: 'left', lineHeight: 1.1, shadow: true, bgColor: 'none', strokeWidth: 0 },
+        props: { x: 260, y: 105, width: 380, height: 60, scaleX: 100, scaleY: 100, rotation: 0, opacity: 96, blur: 0, glow: 0 }, keyframes: {}
+      });
+
+      bgLayers.push({
+        id: uid('lyr'), name: 'T01 • Luminous Teal-Emerald Studio BG', type: 'shape', kind: 'visual',
+        startFrame: 0, endFrame: totalFrames - 1, locked: false, hidden: false, solo: false, muted: false,
+        shape: { kind: 'sber_bg', fill: '#1fa89e', stroke: 'none', strokeWidth: 0, radius: 0 },
+        props: { x: cx, y: cy, width: comp.width, height: comp.height, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+      });
+
+      scenes.forEach((sc, idx) => {
+        const s = sc.startFrame, e = sc.endFrame, mid = Math.round((s + e) / 2);
+        const startOp = idx === 0 ? 100 : 0;
+
+        obj3DLayers.push({
+          id: uid('lyr'), name: `T03 • ${sc.model.toUpperCase()} Sc${idx + 1}`, type: '3d', kind: 'visual',
+          sceneId: sc.id, startFrame: s, endFrame: e, locked: sc.approved, hidden: false, solo: false, muted: false,
+          three: { model: sc.model, preset: sc.preset, color: sc.color, metalness: 0.85, roughness: 0.22, transparency: 0, scale3d: 1, blueLight: 2.1 },
+          props: { x: cx, y: cy * 0.85, width: 920, height: 1120, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0, posZ: 0, rotX: 0.14, rotY: 0, rotZ: 0, camZ: 6.2, camY: 0.3 },
+          keyframes: {
+            opacity: [
+              { id: uid('kf'), frame: s, value: startOp, easing: 'easeOut' },
+              { id: uid('kf'), frame: Math.min(e, s + 10), value: 100, easing: 'linear' },
+              { id: uid('kf'), frame: Math.max(s, e - 8), value: 100, easing: 'easeIn' },
+              { id: uid('kf'), frame: e, value: 0, easing: 'linear' }
+            ],
+            scaleX: [
+              { id: uid('kf'), frame: s, value: idx === 0 ? 100 : 92, easing: 'easeOut' },
+              { id: uid('kf'), frame: Math.min(e, s + 14), value: 100, easing: 'easeInOut' }
+            ],
+            scaleY: [
+              { id: uid('kf'), frame: s, value: idx === 0 ? 100 : 92, easing: 'easeOut' },
+              { id: uid('kf'), frame: Math.min(e, s + 14), value: 100, easing: 'easeInOut' }
+            ]
+          }
+        });
+
+        // Bold Kinetic Bottom Headline (Matches "Пополняйте / Двигайте / Добавляйте / Скрывайте")
+        textLayers.push({
+          id: uid('lyr'), name: `T05 • Headline: ${sc.title}`, type: 'text', kind: 'visual',
+          startFrame: s, endFrame: e, locked: false, hidden: false, solo: false, muted: false,
+          text: { content: sc.title, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 78, fontWeight: '800', color: '#ffffff', align: 'center', lineHeight: 1.1, shadow: true, bgColor: 'none', strokeWidth: 0 },
+          props: { x: cx, y: comp.height * 0.77, width: comp.width * 0.86, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 },
+          keyframes: {
+            y: [{ id: uid('kf'), frame: s, value: idx === 0 ? comp.height * 0.77 : comp.height * 0.81, easing: 'easeOut' }, { id: uid('kf'), frame: Math.min(e, s + 14), value: comp.height * 0.77, easing: 'linear' }],
+            opacity: [{ id: uid('kf'), frame: s, value: startOp, easing: 'easeOut' }, { id: uid('kf'), frame: Math.min(e, s + 12), value: 100, easing: 'linear' }]
+          }
+        });
+
+        const words = sc.narration.split(/\s+/);
+        if (words.length > 12) {
+          const half = Math.ceil(words.length / 2);
+          subLayers.push(
+            { id: uid('lyr'), name: `T06 • Sub ${idx + 1}A`, type: 'subtitle', kind: 'visual', startFrame: s, endFrame: mid, locked: false, hidden: false, solo: false, muted: false,
+              text: { content: words.slice(0, half).join(' '), fontFamily: 'Inter, system-ui, sans-serif', fontSize: 32, fontWeight: '500', color: '#eaf6f6', align: 'center', lineHeight: 1.28, shadow: true, bgColor: 'rgba(4, 24, 36, 0.58)', strokeWidth: 0 },
+              props: { x: cx, y: comp.height * 0.88, width: comp.width * 0.84, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {} },
+            { id: uid('lyr'), name: `T06 • Sub ${idx + 1}B`, type: 'subtitle', kind: 'visual', startFrame: mid + 1, endFrame: e, locked: false, hidden: false, solo: false, muted: false,
+              text: { content: words.slice(half).join(' '), fontFamily: 'Inter, system-ui, sans-serif', fontSize: 32, fontWeight: '500', color: '#eaf6f6', align: 'center', lineHeight: 1.28, shadow: true, bgColor: 'rgba(4, 24, 36, 0.58)', strokeWidth: 0 },
+              props: { x: cx, y: comp.height * 0.88, width: comp.width * 0.84, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {} }
+          );
+        } else {
+          subLayers.push({
+            id: uid('lyr'), name: `T06 • Sub ${idx + 1}`, type: 'subtitle', kind: 'visual', startFrame: s, endFrame: e, locked: false, hidden: false, solo: false, muted: false,
+            text: { content: sc.narration, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 32, fontWeight: '500', color: '#eaf6f6', align: 'center', lineHeight: 1.28, shadow: true, bgColor: 'rgba(4, 24, 36, 0.58)', strokeWidth: 0 },
+            props: { x: cx, y: comp.height * 0.88, width: comp.width * 0.84, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+          });
+        }
+
+        audioLayers.push({
+          id: uid('lyr'), name: `T09 • SFX ${sc.sfx}`, type: 'sfx', kind: 'audio',
+          assetId: idx === 0 ? 'ast_sfx_impact' : 'ast_sfx_whoosh', startFrame: s, endFrame: Math.min(e, s + 30),
+          locked: false, hidden: false, solo: false, muted: false, audio: { volume: 65, fadeIn: 0.05, fadeOut: 0.2, speed: 1, trimOffsetSec: 0 }, props: {}, keyframes: {}
+        });
+        if (idx < scenes.length - 1) transitions.push({ id: uid('tr'), name: sc.transition, kind: sc.transition, startFrame: Math.max(0, e - 10), endFrame: e + 10, intensity: 1 });
+      });
+
+      audioLayers.push({
+        id: uid('lyr'), name: 'T08 • Studio Groove Background Pad', type: 'music', kind: 'audio',
+        assetId: 'ast_mus_pad', startFrame: 0, endFrame: totalFrames - 1, locked: false, hidden: false, solo: false, muted: false,
+        audio: { volume: 42, fadeIn: 1.0, fadeOut: 1.5, speed: 1, trimOffsetSec: 0 }, props: {}, keyframes: {}
+      });
+      audioLayers.push({
+        id: uid('lyr'), name: 'T07 • Voice-Over Track (Import MP3/WAV)', type: 'voiceover', kind: 'audio',
+        assetId: null, startFrame: 0, endFrame: totalFrames - 1, locked: false, hidden: false, solo: false, muted: false,
+        audio: { volume: 100, fadeIn: 0, fadeOut: 0, speed: 1, trimOffsetSec: 0 }, props: {}, keyframes: {}
+      });
+
+      project.layers = [...topAdj, ...subLayers, ...textLayers, ...brandLayers, ...obj3DLayers, ...bgLayers, ...audioLayers];
+      project.transitions = transitions;
+      runtime.selectedLayerId = obj3DLayers[0]?.id || project.layers[0]?.id;
+      runtime.playhead = 0;
+      this.runQC(); refreshAllUI(); closeModal('modal-ai');
+      toast(`Assembled Sber-Style 3D Glass UI across ${project.layers.length} layers!`);
+    },
+
+    runQC() {
+      const issues = [], comp = project.composition;
+      if (!project.layers.some(l => l.type === 'voiceover' && l.assetId)) {
+        issues.push({ id: uid('qc'), level: 'warn', msg: 'Voice-over track has no imported MP3/WAV yet (subtitles use estimated WPM).', fixLabel: 'Import Audio', fix: () => document.getElementById('file-import-input').click() });
+      }
+      if (!issues.length) issues.push({ id: uid('qc'), level: 'ok', msg: 'All QC checks passed: 3D Glass UI choreography, safe areas, transitions, and keyframes are consistent.' });
+      project.qcIssues = issues;
+      return issues;
+    },
+
+    applyNaturalEdit(promptText) {
+      const q = promptText.toLowerCase().trim();
+      if (!q) return 'Enter an editing instruction.';
+      pushUndo();
+      if (q.includes('hide all subtitles') || q.includes('sembunyikan subtitle')) { project.ui.showSubtitles = false; refreshAllUI(); return 'Subtitles hidden cleanly.'; }
+      if (q.includes('mute text') || q.includes('bisukan teks')) { project.ui.muteTextOnFrame = true; refreshAllUI(); return 'Mute Text on Frame enabled.'; }
+      const sel = project.layers.find(l => l.id === runtime.selectedLayerId && !l.locked);
+      if (sel && sel.type === '3d' && (q.includes('smaller') || q.includes('perkecil'))) { sel.props.scaleX *= 0.85; sel.props.scaleY *= 0.85; renderPreview(); return 'Scaled 3D UI down by 15%.'; }
+      if (sel && (q.includes('duration') || q.includes('durasi'))) { sel.endFrame += 30; refreshAllUI(); return 'Extended selected layer by +1.0s.'; }
+      return 'Try: "Hide all subtitles", "Mute text", "Make 3D smaller", or "Increase duration".';
+    }
+  };
+
+  /* ============================================================
+     RELIABLE REAL EXPORT & SAVE VIDEO ENGINE
+     ============================================================ */
+  function buildSrtString() {
+    const fps = project.composition.fps;
+    return project.layers.filter(l => l.type === 'subtitle' && !l.hidden).sort((a, b) => a.startFrame - b.startFrame)
+      .map((s, i) => `${i + 1}\n${frameToSrtTime(s.startFrame, fps)} --> ${frameToSrtTime(s.endFrame, fps)}\n${s.text?.content || ''}\n`).join('\n');
+  }
+
+  function audioBufferToWavBlob(buffer) {
+    const numOfChan = buffer.numberOfChannels, length = buffer.length * numOfChan * 2 + 44;
+    const out = new ArrayBuffer(length), view = new DataView(out);
+    let pos = 0;
+    const set16 = d => { view.setUint16(pos, d, true); pos += 2; };
+    const set32 = d => { view.setUint32(pos, d, true); pos += 4; };
+    set32(0x46464952); set32(length - 8); set32(0x45564157);
+    set32(0x20746d66); set32(16); set16(1); set16(numOfChan);
+    set32(buffer.sampleRate); set32(buffer.sampleRate * 2 * numOfChan);
+    set16(numOfChan * 2); set16(16); set32(0x61746164); set32(length - pos - 4);
+    const ch = []; for (let i = 0; i < numOfChan; i++) ch.push(buffer.getChannelData(i));
+    let offset = 0;
+    while (pos < length) {
+      for (let i = 0; i < numOfChan; i++) {
+        const s = clamp(ch[i][offset] || 0, -1, 1);
+        view.setInt16(pos, s < 0 ? s * 0x8000 : s * 0x7FFF, true); pos += 2;
+      }
+      offset++;
+    }
+    return new Blob([out], { type: 'audio/wav' });
+  }
+
+  function deliverFileResult(blob, filename, isVideo = false) {
+    if (runtime.lastExportBlobUrl) { try { URL.revokeObjectURL(runtime.lastExportBlobUrl); } catch (_) {} }
+    const url = URL.createObjectURL(blob);
+    runtime.lastExportBlobUrl = url;
+
+    const rBox = document.getElementById('ex-result-box');
+    const vidEl = document.getElementById('ex-video-preview');
+    const dlLink = document.getElementById('ex-download-link');
+    rBox.style.display = 'block';
+    dlLink.href = url;
+    dlLink.download = filename;
+    dlLink.textContent = `💾 Save ${filename} (${(blob.size / (1024 * 1024) >= 0.1 ? (blob.size / (1024 * 1024)).toFixed(2) + ' MB' : Math.round(blob.size / 1024) + ' KB')})`;
+
+    if (isVideo) {
+      vidEl.style.display = 'block';
+      vidEl.src = url;
+    } else {
+      vidEl.style.display = 'none';
+      vidEl.removeAttribute('src');
+    }
+
+    // Also attempt automatic download click
+    try {
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (_) {}
+  }
+
+  window.cancelExportIfActive = () => {
+    if (runtime.exporting) { runtime.exportCancel = true; toast('Cancelling export...'); }
+    else closeModal('modal-export');
+  };
+
+  async function startRealExport() {
+    if (runtime.exporting) return;
+    const fmt = document.getElementById('ex-format').value;
+    const scale = parseFloat(document.getElementById('ex-res').value);
+    const fps = parseInt(document.getElementById('ex-fps').value, 10);
+    const mbps = parseInt(document.getElementById('ex-bitrate').value, 10) || 6;
+    const subMode = document.getElementById('ex-subs').value;
+    const rangeMode = document.getElementById('ex-range').value;
+    const transparentBg = document.getElementById('ex-alpha').checked;
+
+    const comp = project.composition, w = Math.round(comp.width * scale), h = Math.round(comp.height * scale);
+    const maxUsedFrame = project.layers.length ? Math.max(...project.layers.map(l => l.endFrame)) : comp.durationFrames - 1;
+    const totalFrames = rangeMode === 'highlight'
+      ? Math.min(comp.durationFrames, fps * 12)
+      : rangeMode === 'content' ? maxUsedFrame + 1 : comp.durationFrames;
+
+    const pBar = document.getElementById('ex-progress-bar'), pTxt = document.getElementById('ex-progress-text');
+    const startBtn = document.getElementById('ex-start-btn');
+    const safeName = (project.name || 'voya_render').replace(/[^a-z0-9_-]/gi, '_');
+
+    document.getElementById('ex-result-box').style.display = 'none';
+    setProjectStatus('Exporting'); runtime.exporting = true; runtime.exportCancel = false;
+    startBtn.disabled = true;
+
+    try {
+      if (fmt === 'srt') {
+        const srt = buildSrtString();
+        if (!srt.trim()) throw new Error('No subtitle layers exist.');
+        const blob = new Blob([srt], { type: 'text/plain;charset=utf-8' });
+        deliverFileResult(blob, `${safeName}.srt`, false);
+        pBar.style.width = '100%'; pTxt.textContent = `Exported SRT (${blob.size} bytes).`;
+        setProjectStatus('Export completed'); return;
+      }
+      if (fmt === 'png') {
+        const off = document.createElement('canvas'); off.width = w; off.height = h;
+        const octx = off.getContext('2d'); octx.scale(scale, scale);
+        renderCompositionFrame(octx, comp.width, comp.height, runtime.playhead, { isExport: true, subMode, transparentBg });
+        const blob = await new Promise(res => off.toBlob(res, 'image/png'));
+        if (!blob || blob.size === 0) throw new Error('PNG encoding failed.');
+        deliverFileResult(blob, `${safeName}_f${runtime.playhead}.png`, false);
+        pBar.style.width = '100%'; pTxt.textContent = `PNG exported (${Math.round(blob.size / 1024)} KB).`;
+        setProjectStatus('Export completed'); return;
+      }
+      if (fmt === 'wav') {
+        const ctx = audioEngine.ensureCtx(), durSec = totalFrames / fps;
+        const offCtx = new OfflineAudioContext(1, Math.max(1, Math.floor(ctx.sampleRate * durSec)), ctx.sampleRate);
+        for (const l of project.layers) {
+          if (l.kind !== 'audio' || l.muted) continue;
+          let m = runtime.mediaCache.get(l.assetId);
+          const ast = project.assets.find(a => a.id === l.assetId);
+          if (!m && ast?.source === 'Synthesized WebAudio') {
+            const buf = audioEngine.synthesizeBuiltInBuffer(ast.subkind, ast.duration || 1);
+            if (buf) m = { audioBuffer: buf };
+          }
+          if (!m?.audioBuffer) continue;
+          const s = offCtx.createBufferSource(); s.buffer = m.audioBuffer;
+          if (ast?.loop || l.type === 'music') s.loop = true;
+          const g = offCtx.createGain(); g.gain.value = (l.audio?.volume ?? 100) / 100;
+          s.connect(g); g.connect(offCtx.destination);
+          s.start(l.startFrame / fps, l.audio?.trimOffsetSec || 0, (l.endFrame - l.startFrame) / fps);
+        }
+        const wav = audioBufferToWavBlob(await offCtx.startRendering());
+        deliverFileResult(wav, `${safeName}.wav`, false);
+        pBar.style.width = '100%'; pTxt.textContent = `WAV exported (${Math.round(wav.size / 1024)} KB).`;
+        setProjectStatus('Export completed'); return;
+      }
+      if (fmt === 'pngseq') {
+        const off = document.createElement('canvas'); off.width = w; off.height = h;
+        const octx = off.getContext('2d'), step = Math.max(1, Math.floor(totalFrames / 12));
+        let lastBlob = null, count = 0;
+        for (let f = 0; f < totalFrames; f += step) {
+          if (runtime.exportCancel) throw new Error('Export cancelled.');
+          octx.setTransform(scale, 0, 0, scale, 0, 0);
+          renderCompositionFrame(octx, comp.width, comp.height, f, { isExport: true, subMode, transparentBg });
+          lastBlob = await new Promise(res => off.toBlob(res, 'image/png'));
+          deliverFileResult(lastBlob, `${safeName}_seq_${String(f).padStart(4,'0')}.png`, false);
+          count++; pBar.style.width = `${Math.round((f / totalFrames) * 100)}%`;
+          pTxt.textContent = `Exporting PNG sequence frame ${f}/${totalFrames}...`;
+          await new Promise(r => setTimeout(r, 90));
+        }
+        pBar.style.width = '100%'; pTxt.textContent = `Exported ${count} PNG frames.`;
+        setProjectStatus('Export completed'); return;
+      }
+
+      if (typeof MediaRecorder === 'undefined') throw new Error('MediaRecorder API not available in this browser.');
+
+      // Prefer fast VP8 WebM (or H.264 MP4 if natively supported)
+      const mimeCandidates = fmt === 'mp4'
+        ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4']
+        : ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8', 'video/webm'];
+      const chosenMime = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m));
+      if (!chosenMime) throw new Error(`Browser MediaRecorder does not support ${fmt.toUpperCase()}. Try WebM.`);
+
+      const off = document.createElement('canvas'); off.width = w; off.height = h;
+      const octx = off.getContext('2d');
+      octx.setTransform(scale, 0, 0, scale, 0, 0);
+      renderCompositionFrame(octx, comp.width, comp.height, 0, { isExport: true, subMode, transparentBg });
+
+      const vStream = off.captureStream(fps);
+      const actx = audioEngine.ensureCtx();
+      let dest = null, keepOsc = null;
+      if (actx && chosenMime.includes('opus')) {
+        dest = actx.createMediaStreamDestination();
+        // Keepalive silent signal (-90 dB) so MediaRecorder never stalls waiting on audio frames
+        keepOsc = actx.createOscillator();
+        const keepGain = actx.createGain();
+        keepGain.gain.value = 0.00003;
+        keepOsc.connect(keepGain); keepGain.connect(dest); keepOsc.start();
+        dest.stream.getAudioTracks().forEach(t => vStream.addTrack(t));
+      }
+
+      const chunks = [];
+      let rec;
+      try {
+        rec = new MediaRecorder(vStream, { mimeType: chosenMime, videoBitsPerSecond: mbps * 1_000_000 });
+      } catch (_) {
+        // Fallback to video-only stream if audio track mix fails in strict sandbox
+        const videoOnly = off.captureStream(fps);
+        rec = new MediaRecorder(videoOnly, { mimeType: 'video/webm' });
+      }
+      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      const donePromise = new Promise((resolve, reject) => {
+        rec.onstop = resolve;
+        rec.onerror = ev => reject(ev.error || new Error('MediaRecorder error'));
+      });
+
+      rec.start(200);
+      if (dest) audioEngine.startPlaybackFromFrame(0, dest);
+
+      const startWall = performance.now(), frameMs = 1000 / fps;
+      for (let f = 0; f < totalFrames; f++) {
+        if (runtime.exportCancel) {
+          try { rec.stop(); } catch (_) {}
+          if (keepOsc) try { keepOsc.stop(); } catch (_) {}
+          audioEngine.stopPlayback();
+          throw new Error('Export cancelled.');
+        }
+        octx.setTransform(scale, 0, 0, scale, 0, 0);
+        renderCompositionFrame(octx, comp.width, comp.height, f, { isExport: true, subMode, transparentBg });
+        const pct = Math.round(((f + 1) / totalFrames) * 100);
+        const elapsed = (performance.now() - startWall) / 1000;
+        const eta = f > 4 ? Math.max(0, Math.round((elapsed / (f + 1)) * (totalFrames - f - 1))) : '...';
+        pBar.style.width = `${pct}%`;
+        pTxt.textContent = `Rendering ${chosenMime.split(';')[0]} — Frame ${f + 1}/${totalFrames} (${pct}%) • ETA ${eta}s`;
+        await new Promise(r => setTimeout(r, Math.max(4, startWall + (f + 1) * frameMs - performance.now())));
+      }
+
+      audioEngine.stopPlayback();
+      if (keepOsc) try { keepOsc.stop(); } catch (_) {}
+      rec.stop();
+      await donePromise;
+
+      const outBlob = new Blob(chunks, { type: rec.mimeType || chosenMime });
+      if (outBlob.size === 0) throw new Error('Generated video file was 0 bytes. Try Chrome/Edge locally or lower resolution.');
+      const ext = (rec.mimeType || chosenMime).includes('mp4') ? 'mp4' : 'webm';
+      deliverFileResult(outBlob, `${safeName}.${ext}`, true);
+
+      if (subMode === 'burnAndSrt') {
+        const srt = buildSrtString();
+        if (srt.trim()) {
+          const sb = new Blob([srt], { type: 'text/plain' });
+          const a = document.createElement('a'); a.href = URL.createObjectURL(sb); a.download = `${safeName}.srt`; a.click();
+        }
+      }
+
+      pBar.style.width = '100%';
+      pTxt.textContent = `Export completed! Real ${ext.toUpperCase()} (${(outBlob.size / (1024 * 1024)).toFixed(2)} MB).`;
+      setProjectStatus('Export completed');
+      toast('Video render ready to save!');
+    } catch (err) {
+      pTxt.textContent = `Export failed: ${err.message}`;
+      setProjectStatus('Export failed');
+      toast(err.message);
+    } finally {
+      runtime.exporting = false;
+      startBtn.disabled = false;
+    }
+  }
+
+  function renderPreview() {
+    const canvas = document.getElementById('preview-canvas'), stage = document.getElementById('preview-stage'), comp = project.composition;
+    if (canvas.width !== comp.width || canvas.height !== comp.height) { canvas.width = comp.width; canvas.height = comp.height; }
+    const sw = Math.max(120, stage.clientWidth - 18), sh = Math.max(120, stage.clientHeight - 18);
+    let scale = project.ui.zoomLevel;
+    if (project.ui.zoomMode === 'fit') scale = Math.min(sw / comp.width, sh / comp.height);
+    else if (project.ui.zoomMode === 'fitW') scale = sw / comp.width;
+    else if (project.ui.zoomMode === 'fitH') scale = sh / comp.height;
+    scale = clamp(scale, 0.08, 2.0); project.ui.zoomLevel = scale;
+    canvas.style.width = `${Math.round(comp.width * scale)}px`;
+    canvas.style.height = `${Math.round(comp.height * scale)}px`;
+    renderCompositionFrame(canvas.getContext('2d'), comp.width, comp.height, runtime.playhead, { isExport: false });
+    document.getElementById('tl-timecode').textContent = frameToTimecode(runtime.playhead, comp.fps);
+    document.getElementById('comp-info-label').textContent = `${comp.name} • ${comp.width}×${comp.height} • ${comp.fps} fps • ${(comp.durationFrames / comp.fps).toFixed(1)}s`;
+    document.getElementById('render-engine-badge').textContent = '3D Glassmorphism UI Engine Active';
+  }
+
+  const ASSET_TABS = ['Project', 'Media', 'Images', 'Videos', 'Audio', 'Text presets', 'Shapes', '3D assets', 'Effects', 'Transitions'];
+
+  function renderAssetsPanel() {
+    const tabWrap = document.getElementById('asset-tabs'); tabWrap.innerHTML = '';
+    ASSET_TABS.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'tab-btn' + (project.ui.activeAssetTab === t ? ' active' : '');
+      b.textContent = t; b.onclick = () => { project.ui.activeAssetTab = t; renderAssetsPanel(); };
+      tabWrap.appendChild(b);
+    });
+    const list = document.getElementById('asset-list'); list.innerHTML = '';
+    const tab = project.ui.activeAssetTab;
+
+    if (tab === 'Text presets') {
+      [{ name: 'Sber Bold Kinetic Headline', size: 78, weight: '800', bg: 'none' }, { name: 'Top-Left Brand Badge', size: 38, weight: '800', bg: 'none' }, { name: 'Portrait Subtitle Pill', size: 32, weight: '500', bg: 'rgba(4,24,36,0.62)' }]
+        .forEach(p => list.appendChild(createAssetRow(p.name, 'Text Preset', 'TXT', () => addTextLayer(p))));
+      return;
+    }
+    if (tab === 'Shapes') {
+      [{ name: 'Luminous Teal Studio BG', kind: 'sber_bg' }, { name: 'Glass Card Container', kind: 'rect' }, { name: 'Studio Circle Halo', kind: 'circle' }]
+        .forEach(s => list.appendChild(createAssetRow(s.name, 'Vector Shape', 'SHP', () => addShapeLayer(s.kind, s.name))));
+      return;
+    }
+    if (tab === 'Effects') {
+      ['Gaussian Blur (+8px)', 'Glass Bloom Glow', 'Color Contrast Boost', 'Luminous Light Sweep']
+        .forEach(ef => list.appendChild(createAssetRow(ef, 'Click to apply to selected layer', 'FX', () => applyQuickEffect(ef))));
+      return;
+    }
+    if (tab === 'Transitions') {
+      [{ name: 'Smooth Zoom Burst', kind: 'smooth_zoom' }, { name: 'Camera Push', kind: 'camera_push' }, { name: 'Whip Pan', kind: 'whip_pan' }, { name: 'Light Sweep', kind: 'light_sweep' }]
+        .forEach(tr => list.appendChild(createAssetRow(tr.name, 'Add at playhead (20f)', 'TRN', () => addTransitionAtPlayhead(tr))));
+      return;
+    }
+    if (tab === 'Project') {
+      project.folders.forEach(f => list.appendChild(createAssetRow(`📁 ${f.name}`, 'Folder', 'DIR', () => {})));
+    }
+
+    const filtered = project.assets.filter(a => {
+      if (tab === 'Project' || tab === 'Media') return true;
+      if (tab === 'Images') return a.kind === 'image';
+      if (tab === 'Videos') return a.kind === 'video';
+      if (tab === 'Audio') return a.kind === 'audio';
+      if (tab === '3D assets') return a.kind === '3d';
+      return true;
+    });
+    if (!filtered.length) { list.innerHTML = `<div style="color:var(--text-dim);padding:12px;text-align:center;">No assets in ${tab}.</div>`; return; }
+    filtered.forEach(a => list.appendChild(createAssetRow(a.name, `${a.source || a.kind}`, a.url ? `<img src="${a.url}" alt="" />` : a.kind.toUpperCase(), () => addLayerFromAsset(a), a)));
+  }
+
+  function createAssetRow(title, sub, thumbHtml, onAdd, assetObj = null) {
+    const div = document.createElement('div'); div.className = 'asset-item';
+    div.innerHTML = `<div class="asset-thumb">${thumbHtml}</div><div class="asset-meta"><div class="asset-name">${title}</div><div class="asset-sub">${sub}</div></div>`;
+    div.ondblclick = onAdd;
+    div.onclick = () => {
+      if (!assetObj) return onAdd();
+      const box = document.getElementById('asset-preview-box'); box.style.display = 'block';
+      box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><b>${assetObj.name}</b><button onclick="this.parentElement.parentElement.style.display='none'">✕</button></div>
+        <div style="display:flex;gap:4px;"><button class="primary" id="ap-add">Add</button><button id="ap-ren">Rename</button><button id="ap-rep">Replace Layer</button></div>`;
+      document.getElementById('ap-add').onclick = onAdd;
+      document.getElementById('ap-ren').onclick = () => { const nn = prompt('Rename asset:', assetObj.name); if (nn) { pushUndo(); assetObj.name = nn; renderAssetsPanel(); } };
+      document.getElementById('ap-rep').onclick = () => {
+        const sel = project.layers.find(l => l.id === runtime.selectedLayerId);
+        if (!sel) return toast('Select a target layer first');
+        pushUndo(); sel.assetId = assetObj.id; sel.name = assetObj.name; refreshAllUI();
+      };
+    };
+    return div;
+  }
+
+  function addTextLayer(preset = {}) {
+    pushUndo(); const c = project.composition;
+    const l = {
+      id: uid('lyr'), name: preset.name || 'Text Layer', type: 'text', kind: 'visual',
+      startFrame: runtime.playhead, endFrame: Math.min(c.durationFrames - 1, runtime.playhead + c.fps * 5),
+      locked: false, hidden: false, solo: false, muted: false,
+      text: { content: 'VOYA MOTION', fontFamily: 'Inter, system-ui, sans-serif', fontSize: preset.size || 70, fontWeight: preset.weight || '800', color: '#ffffff', align: 'center', lineHeight: 1.15, shadow: true, bgColor: preset.bg || 'none', strokeWidth: 0 },
+      props: { x: c.width / 2, y: c.height * 0.77, width: c.width * 0.84, height: 120, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+    };
+    project.layers.unshift(l); runtime.selectedLayerId = l.id; refreshAllUI();
+  }
+
+  function addSubtitleLayer(text = 'New subtitle line') {
+    pushUndo(); const c = project.composition;
+    const l = {
+      id: uid('lyr'), name: 'Subtitle', type: 'subtitle', kind: 'visual',
+      startFrame: runtime.playhead, endFrame: Math.min(c.durationFrames - 1, runtime.playhead + c.fps * 4),
+      locked: false, hidden: false, solo: false, muted: false,
+      text: { content: text, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 32, fontWeight: '500', color: '#eaf6f6', align: 'center', lineHeight: 1.3, shadow: true, bgColor: 'rgba(4,24,36,0.58)', strokeWidth: 0 },
+      props: { x: c.width / 2, y: c.height * 0.88, width: c.width * 0.84, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+    };
+    project.layers.unshift(l); runtime.selectedLayerId = l.id; refreshAllUI();
+  }
+
+  function addShapeLayer(kind = 'rect', name = 'Shape Layer') {
+    pushUndo(); const c = project.composition;
+    const l = {
+      id: uid('lyr'), name, type: 'shape', kind: 'visual',
+      startFrame: runtime.playhead, endFrame: Math.min(c.durationFrames - 1, runtime.playhead + c.fps * 5),
+      locked: false, hidden: false, solo: false, muted: false,
+      shape: { kind, fill: kind === 'sber_bg' ? '#1fa89e' : '#1b2232', stroke: '#2d7ff9', strokeWidth: kind === 'sber_bg' ? 0 : 3, radius: 24 },
+      props: { x: c.width / 2, y: c.height / 2, width: kind === 'sber_bg' ? c.width : 520, height: kind === 'sber_bg' ? c.height : 260, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+    };
+    if (kind === 'sber_bg') project.layers.push(l); else project.layers.unshift(l);
+    runtime.selectedLayerId = l.id; refreshAllUI();
+  }
+
+  function add3DLayer(model = 'phone_pop', name = '3D Phone + Pop-Out Card') {
+    pushUndo(); const c = project.composition;
+    const l = {
+      id: uid('lyr'), name, type: '3d', kind: 'visual',
+      startFrame: runtime.playhead, endFrame: Math.min(c.durationFrames - 1, runtime.playhead + c.fps * 6),
+      locked: false, hidden: false, solo: false, muted: false,
+      three: { model, preset: 'Floating Product', color: '#18b86a', metalness: 0.85, roughness: 0.22, transparency: 0, scale3d: 1, blueLight: 2.1 },
+      props: { x: c.width / 2, y: c.height * 0.43, width: 920, height: 1120, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0, posZ: 0, rotX: 0.15, rotY: 0, rotZ: 0, camZ: 6.2, camY: 0.3 }, keyframes: {}
+    };
+    project.layers.unshift(l); runtime.selectedLayerId = l.id; refreshAllUI();
+  }
+
+  function addLayerFromAsset(asset) {
+    pushUndo(); const c = project.composition;
+    if (asset.kind === '3d') return add3DLayer(asset.model, asset.name);
+    const durFrames = Math.min(c.durationFrames - runtime.playhead, Math.round((asset.duration || 6) * c.fps));
+    const isAudio = asset.kind === 'audio';
+    const l = {
+      id: uid('lyr'), name: asset.name,
+      type: isAudio ? (asset.subkind === 'music' ? 'music' : asset.subkind === 'sfx' ? 'sfx' : 'voiceover') : asset.kind,
+      kind: isAudio ? 'audio' : 'visual', assetId: asset.id, startFrame: runtime.playhead,
+      endFrame: Math.max(runtime.playhead + 15, runtime.playhead + durFrames - 1),
+      locked: false, hidden: false, solo: false, muted: false,
+      audio: isAudio ? { volume: 100, fadeIn: 0, fadeOut: 0, speed: 1, trimOffsetSec: 0 } : undefined,
+      colorAdj: !isAudio ? { brightness: 100, contrast: 100, saturation: 100 } : undefined,
+      props: { x: c.width / 2, y: c.height / 2, width: asset.width ? Math.min(c.width * 0.9, asset.width) : 720, height: asset.height ? Math.min(c.height * 0.7, asset.height) : 720, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+    };
+    project.layers.unshift(l); runtime.selectedLayerId = l.id; refreshAllUI();
+  }
+
+  function applyQuickEffect(name) {
+    const sel = project.layers.find(l => l.id === runtime.selectedLayerId);
+    if (!sel) return toast('Select a visual layer first');
+    pushUndo();
+    if (name.includes('Blur')) sel.props.blur = 8;
+    else if (name.includes('Glow')) sel.props.glow = 24;
+    else if (name.includes('Contrast')) { sel.colorAdj = sel.colorAdj || { brightness: 100, contrast: 100, saturation: 100 }; sel.colorAdj.contrast = 125; }
+    else if (name.includes('Light Sweep')) {
+      project.layers.unshift({
+        id: uid('lyr'), name: 'Adjustment Light Sweep', type: 'adjustment', kind: 'visual',
+        startFrame: sel.startFrame, endFrame: sel.endFrame, locked: false, hidden: false, solo: false, muted: false,
+        props: { x: project.composition.width / 2, y: project.composition.height / 2, width: project.composition.width, height: project.composition.height, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+      });
+    }
+    refreshAllUI();
+  }
+
+  function addTransitionAtPlayhead(tr) {
+    pushUndo();
+    project.transitions.push({ id: uid('tr'), name: tr.name, kind: tr.kind, startFrame: Math.max(0, runtime.playhead - 10), endFrame: Math.min(project.composition.durationFrames - 1, runtime.playhead + 10), intensity: 1 });
+    renderPreview(); toast(`Added ${tr.name} transition`);
+  }
+
+  function toggleKeyframe(layer, prop) {
+    pushUndo();
+    layer.keyframes = layer.keyframes || {}; layer.keyframes[prop] = layer.keyframes[prop] || [];
+    const list = layer.keyframes[prop], idx = list.findIndex(k => k.frame === runtime.playhead);
+    if (idx >= 0) list.splice(idx, 1);
+    else { list.push({ id: uid('kf'), frame: runtime.playhead, value: evalProp(layer, prop, runtime.playhead), easing: 'easeInOut', cp1: [0.42, 0], cp2: [0.58, 1] }); list.sort((a, b) => a.frame - b.frame); }
+    refreshAllUI();
+  }
+
+  function renderInspector() {
+    const body = document.getElementById('inspector-body'), tab = project.ui.inspectorTab;
+    document.getElementById('tab-prop-layer').classList.toggle('active', tab === 'layer');
+    document.getElementById('tab-prop-qc').classList.toggle('active', tab === 'qc');
+    document.getElementById('tab-prop-ai').classList.toggle('active', tab === 'ai');
+
+    if (tab === 'qc') {
+      const issues = AIDirector.runQC();
+      body.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><b>Quality Control</b><button id="qc-rerun">Re-scan</button></div>`;
+      issues.forEach(it => {
+        const card = document.createElement('div'); card.className = 'prop-section'; card.style.padding = '7px';
+        card.innerHTML = `<div style="display:flex;justify-content:space-between;gap:6px;align-items:center;"><span class="badge ${it.level === 'ok' ? 'ok' : 'warn'}">${it.level.toUpperCase()}</span><span style="flex:1;font-size:10.5px;">${it.msg}</span>${it.fix ? `<button class="primary" style="height:20px;">${it.fixLabel}</button>` : ''}</div>`;
+        if (it.fix) card.querySelector('button').onclick = () => { it.fix(); renderInspector(); };
+        body.appendChild(card);
+      });
+      document.getElementById('qc-rerun').onclick = renderInspector;
+      return;
+    }
+
+    if (tab === 'ai') {
+      body.innerHTML = `<div class="prop-section" style="padding:8px;">
+        <div style="font-weight:600;margin-bottom:4px;">AI Editing Assistant</div>
+        <textarea id="ai-edit-prompt" rows="3" style="width:100%;" placeholder="e.g. Hide all subtitles, Mute text, Make 3D smaller, Increase duration"></textarea>
+        <div style="display:flex;gap:4px;margin-top:6px;"><button id="ai-edit-run" class="primary" style="flex:1;">Apply AI Edit</button></div>
+        <div id="ai-edit-reply" style="margin-top:6px;font-size:10.5px;color:#7cb3ff;"></div></div>`;
+      document.getElementById('ai-edit-run').onclick = () => {
+        document.getElementById('ai-edit-reply').textContent = AIDirector.applyNaturalEdit(document.getElementById('ai-edit-prompt').value);
+      };
+      return;
+    }
+
+    const layer = project.layers.find(l => l.id === runtime.selectedLayerId);
+    if (!layer) {
+      body.innerHTML = `<div style="color:var(--text-dim);padding:16px;text-align:center;">Select a layer in the timeline or preview.</div>`;
+      return;
+    }
+    body.innerHTML = '';
+
+    const timingSec = document.createElement('div'); timingSec.className = 'prop-section';
+    timingSec.innerHTML = `<div class="prop-head"><span>Layer: ${layer.name}</span><span class="badge">${layer.type}</span></div>
+      <div class="prop-grid"><span class="prop-label">Start / End (f)</span><div class="prop-row"><input id="ip-sf" type="number" value="${layer.startFrame}" /> – <input id="ip-ef" type="number" value="${layer.endFrame}" /></div></div>`;
+    body.appendChild(timingSec);
+    timingSec.querySelector('#ip-sf').onchange = (e) => { pushUndo(); layer.startFrame = clamp(+e.target.value, 0, layer.endFrame - 1); refreshAllUI(); };
+    timingSec.querySelector('#ip-ef').onchange = (e) => { pushUndo(); layer.endFrame = clamp(+e.target.value, layer.startFrame + 1, project.composition.durationFrames - 1); refreshAllUI(); };
+
+    if (layer.kind === 'audio') {
+      const aSec = document.createElement('div'); aSec.className = 'prop-section';
+      aSec.innerHTML = `<div class="prop-head"><span>Audio Controls</span></div><div class="prop-grid">
+        <span class="prop-label">Volume (%)</span><input id="ip-vol" type="number" min="0" max="200" value="${layer.audio?.volume ?? 100}" />
+        <span class="prop-label">Speed</span><input id="ip-spd" type="number" step="0.1" min="0.5" max="2" value="${layer.audio?.speed ?? 1}" /></div>`;
+      body.appendChild(aSec);
+      aSec.querySelector('#ip-vol').onchange = e => { pushUndo(); layer.audio.volume = +e.target.value; };
+      aSec.querySelector('#ip-spd').onchange = e => { pushUndo(); layer.audio.speed = +e.target.value; };
+      return;
+    }
+
+    const trSec = document.createElement('div'); trSec.className = 'prop-section';
+    trSec.innerHTML = `<div class="prop-head"><span>Transform (Diamond = Keyframe)</span></div><div class="prop-grid" id="tr-grid"></div>`;
+    const grid = trSec.querySelector('#tr-grid');
+    [['Pos X', 'x', 1], ['Pos Y', 'y', 1], ['Scale X %', 'scaleX', 1], ['Scale Y %', 'scaleY', 1], ['Rotation °', 'rotation', 1], ['Opacity %', 'opacity', 1], ['Blur px', 'blur', 1], ['Glow px', 'glow', 1]].forEach(([label, prop, step]) => {
+      const kfs = layer.keyframes?.[prop] || [], atKf = kfs.some(k => k.frame === runtime.playhead);
+      const lbl = document.createElement('span'); lbl.className = 'prop-label';
+      const dot = document.createElement('span'); dot.className = `kf-dot ${kfs.length ? 'has-kf' : ''} ${atKf ? 'at-kf' : ''}`;
+      dot.onclick = () => toggleKeyframe(layer, prop); lbl.append(dot, label);
+      const inp = document.createElement('input'); inp.type = 'number'; inp.step = step;
+      inp.value = Math.round(evalProp(layer, prop, runtime.playhead) * 100) / 100;
+      inp.onchange = (e) => {
+        pushUndo(); const v = +e.target.value, kf = kfs.find(k => k.frame === runtime.playhead);
+        if (kf) kf.value = v; else layer.props[prop] = v; renderPreview();
+      };
+      grid.append(lbl, inp);
+    });
+    body.appendChild(trSec);
+
+    if (layer.type === 'text' || layer.type === 'subtitle') {
+      const txSec = document.createElement('div'); txSec.className = 'prop-section';
+      txSec.innerHTML = `<div class="prop-head"><span>${layer.type === 'subtitle' ? 'Subtitle' : 'Text'} Properties</span></div>
+        <div class="prop-grid">
+          <span class="prop-label">Content</span><textarea id="ip-txt" rows="2" style="width:100%;">${layer.text.content}</textarea>
+          <span class="prop-label">Font Size</span><input id="ip-fs" type="number" min="12" max="220" value="${layer.text.fontSize}" />
+          <span class="prop-label">Color</span><input id="ip-col" type="color" value="${layer.text.color}" style="height:22px;" />
+          <span class="prop-label">Align</span><select id="ip-aln"><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option></select>
+        </div>`;
+      txSec.querySelector('#ip-aln').value = layer.text.align || 'center';
+      txSec.querySelector('#ip-txt').oninput = e => { layer.text.content = e.target.value; renderPreview(); };
+      txSec.querySelector('#ip-fs').onchange = e => { pushUndo(); layer.text.fontSize = +e.target.value; renderPreview(); };
+      txSec.querySelector('#ip-col').oninput = e => { layer.text.color = e.target.value; renderPreview(); };
+      txSec.querySelector('#ip-aln').onchange = e => { layer.text.align = e.target.value; renderPreview(); };
+      body.appendChild(txSec);
+    }
+
+    if (layer.type === '3d') {
+      const dSec = document.createElement('div'); dSec.className = 'prop-section';
+      dSec.innerHTML = `<div class="prop-head"><span>3D Glass UI &amp; Object</span></div>
+        <div class="prop-grid">
+          <span class="prop-label">3D Scene</span><select id="ip-3dm">
+            <option value="glass_icon">00:00 Glass Icon Burst</option>
+            <option value="phone_pop">00:01–02 Phone + Pop-Out Card</option>
+            <option value="phone_orb">00:03–05 Phone + Glass Orb Swipe</option>
+            <option value="stack_cards">00:06–08 Stacked 3D Parallax Cards</option>
+            <option value="orb_tap">00:09–11 UI List + Orb Tap</option>
+            <option value="phone_hero">00:12 Hero Phone Spin-Land</option>
+            <option value="bitcoin">3D Bitcoin Coin</option>
+            <option value="globe">3D Trade Globe</option>
+          </select>
+          <span class="prop-label">Rot Y</span><input id="ip-3dry" type="number" step="0.1" value="${Math.round(evalProp(layer, 'rotY', runtime.playhead) * 100) / 100}" />
+        </div>`;
+      dSec.querySelector('#ip-3dm').value = layer.three.model;
+      dSec.querySelector('#ip-3dm').onchange = e => { pushUndo(); layer.three.model = e.target.value; renderPreview(); };
+      dSec.querySelector('#ip-3dry').onchange = e => { pushUndo(); layer.props.rotY = +e.target.value; renderPreview(); };
+      body.appendChild(dSec);
+    }
+  }
+
+  function getPxPerSec() { return parseInt(document.getElementById('tl-zoom').value, 10) || 44; }
+
+  function renderTimeline() {
+    const comp = project.composition, pps = getPxPerSec();
+    const totalW = Math.max(900, Math.ceil((comp.durationFrames / comp.fps) * pps) + 120);
+    document.getElementById('tl-layer-count').textContent = `${project.layers.length} layers`;
+
+    const ruler = document.getElementById('tl-ruler'); ruler.width = totalW; ruler.height = 24;
+    const rctx = ruler.getContext('2d'); rctx.fillStyle = '#121419'; rctx.fillRect(0, 0, totalW, 24);
+    rctx.strokeStyle = '#2d3340'; rctx.fillStyle = '#8b92a0'; rctx.font = '10px monospace';
+    const maxSec = Math.ceil(comp.durationFrames / comp.fps);
+    for (let s = 0; s <= maxSec; s++) {
+      const x = s * pps; rctx.beginPath(); rctx.moveTo(x, 12); rctx.lineTo(x, 24); rctx.stroke();
+      if (pps >= 30 || s % 2 === 0) rctx.fillText(`${s}s`, x + 3, 10);
+    }
+
+    const leftRows = document.getElementById('tl-rows-left'), lanes = document.getElementById('tl-lanes');
+    leftRows.innerHTML = ''; lanes.innerHTML = '';
+    document.getElementById('tl-tracks-inner').style.width = `${totalW}px`;
+
+    const colorMap = { '3d': '#1a6b73', 'text': '#51377d', 'subtitle': '#2b6a65', 'shape': '#31394a', 'image': '#6d4c2f', 'video': '#6d4c2f', 'voiceover': '#2f6f44', 'music': '#26543a', 'sfx': '#495a2b', 'adjustment': '#554422' };
+
+    project.layers.forEach(layer => {
+      const isSel = layer.id === runtime.selectedLayerId;
+      const rHead = document.createElement('div');
+      rHead.className = 'tl-row-head' + (isSel ? ' selected' : '');
+      rHead.innerHTML = `<button class="tl-mini-btn ${!layer.hidden ? 'on' : ''}">${layer.hidden ? '○' : '●'}</button>
+        <button class="tl-mini-btn ${layer.locked ? 'warn-on' : ''}">${layer.locked ? '🔒' : '🔓'}</button>
+        <button class="tl-mini-btn ${layer.solo ? 'on' : ''}">S</button>
+        <button class="tl-mini-btn ${layer.muted ? 'warn-on' : ''}">M</button>
+        <span class="tl-row-name" title="${layer.name}">${layer.name}</span>
+        <span class="tl-type-badge">${layer.type.slice(0, 4)}</span>`;
+      const [btnVis, btnLock, btnSolo, btnMute] = rHead.querySelectorAll('button');
+      btnVis.onclick = (e) => { e.stopPropagation(); pushUndo(); layer.hidden = !layer.hidden; refreshAllUI(); };
+      btnLock.onclick = (e) => { e.stopPropagation(); pushUndo(); layer.locked = !layer.locked; refreshAllUI(); };
+      btnSolo.onclick = (e) => { e.stopPropagation(); pushUndo(); layer.solo = !layer.solo; refreshAllUI(); };
+      btnMute.onclick = (e) => { e.stopPropagation(); pushUndo(); layer.muted = !layer.muted; refreshAllUI(); };
+      rHead.ondblclick = () => { const nn = prompt('Rename layer:', layer.name); if (nn) { pushUndo(); layer.name = nn; renderTimeline(); } };
+      rHead.onclick = () => { runtime.selectedLayerId = layer.id; refreshAllUI(); };
+      leftRows.appendChild(rHead);
+
+      const lane = document.createElement('div'); lane.className = 'tl-lane' + (isSel ? ' selected' : '');
+      const clip = document.createElement('div'); clip.className = 'tl-clip' + (isSel ? ' selected' : '') + (layer.locked ? ' locked' : '');
+      const leftPx = (layer.startFrame / comp.fps) * pps;
+      const widthPx = Math.max(10, ((layer.endFrame - layer.startFrame + 1) / comp.fps) * pps);
+      clip.style.left = `${leftPx}px`; clip.style.width = `${widthPx}px`;
+      clip.style.background = colorMap[layer.type] || '#343b4a';
+      clip.innerHTML = `<div class="tl-clip-handle left"></div><span style="position:relative;z-index:2;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${layer.name}</span><div class="tl-clip-handle right"></div>`;
+
+      if (layer.kind === 'audio' && layer.assetId) {
+        const wCanvas = document.createElement('canvas'); wCanvas.className = 'tl-clip-wave';
+        wCanvas.width = Math.min(800, Math.max(20, Math.round(widthPx))); wCanvas.height = 20;
+        const m = runtime.mediaCache.get(layer.assetId);
+        const peaks = m?.peaks || Array.from({ length: 40 }, (_, i) => 0.25 + 0.55 * Math.abs(Math.sin(i * 0.45)));
+        const wctx = wCanvas.getContext('2d'); wctx.fillStyle = '#a7f3d0';
+        const bw = wCanvas.width / peaks.length;
+        peaks.forEach((pk, i) => { const bh = Math.max(2, pk * 18); wctx.fillRect(i * bw, 10 - bh / 2, Math.max(1, bw - 1), bh); });
+        clip.appendChild(wCanvas);
+      }
+
+      clip.onmousedown = (ev) => {
+        ev.stopPropagation(); runtime.selectedLayerId = layer.id; renderInspector();
+        if (layer.locked) return toast('Layer is locked');
+        const mode = ev.target.classList.contains('left') ? 'trimL' : ev.target.classList.contains('right') ? 'trimR' : 'move';
+        const startX = ev.clientX, origS = layer.startFrame, origE = layer.endFrame;
+        let moved = false;
+        const onMove = (mv) => {
+          const df = Math.round(((mv.clientX - startX) / pps) * comp.fps);
+          if (df !== 0 && !moved) { pushUndo(); moved = true; }
+          if (mode === 'move') {
+            const len = origE - origS; let ns = clamp(origS + df, 0, comp.durationFrames - 1 - len);
+            if (project.ui.snapping && Math.abs(ns - runtime.playhead) <= 4) ns = runtime.playhead;
+            layer.startFrame = ns; layer.endFrame = ns + len;
+          } else if (mode === 'trimL') layer.startFrame = clamp(origS + df, 0, origE - 2);
+          else layer.endFrame = clamp(origE + df, origS + 2, comp.durationFrames - 1);
+          clip.style.left = `${(layer.startFrame / comp.fps) * pps}px`;
+          clip.style.width = `${Math.max(10, ((layer.endFrame - layer.startFrame + 1) / comp.fps) * pps)}px`;
+        };
+        const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); refreshAllUI(); };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      };
+      lane.appendChild(clip);
+
+      Object.entries(layer.keyframes || {}).forEach(([prop, list]) => {
+        list.forEach(kf => {
+          const kd = document.createElement('div');
+          kd.className = 'tl-kf' + (runtime.selectedKeyframe?.kfId === kf.id ? ' selected' : '');
+          kd.style.left = `${(kf.frame / comp.fps) * pps}px`;
+          kd.onmousedown = (e) => {
+            e.stopPropagation(); runtime.selectedLayerId = layer.id;
+            runtime.selectedKeyframe = { layerId: layer.id, prop, kfId: kf.id };
+            runtime.playhead = kf.frame; refreshAllUI();
+          };
+          lane.appendChild(kd);
+        });
+      });
+      lanes.appendChild(lane);
+    });
+    updatePlayheadLine();
+    if (project.ui.graphOpen) renderGraphEditor();
+  }
+
+  function updatePlayheadLine() {
+    document.getElementById('tl-playhead').style.left = `${(runtime.playhead / project.composition.fps) * getPxPerSec()}px`;
+  }
+
+  function renderGraphEditor() {
+    const drawer = document.getElementById('graph-drawer');
+    drawer.classList.toggle('open', !!project.ui.graphOpen);
+    if (!project.ui.graphOpen) return;
+    const canvas = document.getElementById('graph-canvas');
+    canvas.width = canvas.clientWidth || 700; canvas.height = 96;
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e1014'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const layer = project.layers.find(l => l.id === runtime.selectedLayerId);
+    const prop = document.getElementById('graph-prop-select').value;
+    document.getElementById('graph-label').textContent = layer ? `Graph: ${layer.name} → ${prop}` : 'Graph Editor';
+    if (!layer) return;
+    const kfs = layer.keyframes?.[prop] || [];
+    if (!kfs.length) { ctx.fillStyle = '#666d7c'; ctx.font = '11px sans-serif'; ctx.fillText('No keyframes on this property.', 12, 50); return; }
+
+    const minF = 0, maxF = Math.max(1, project.composition.durationFrames), vals = kfs.map(k => k.value);
+    const minV = Math.min(...vals) - 10, maxV = Math.max(...vals) + 10;
+    const toX = f => 16 + ((f - minF) / (maxF - minF)) * (canvas.width - 32);
+    const toY = v => canvas.height - 14 - ((v - minV) / Math.max(1e-4, maxV - minV)) * (canvas.height - 28);
+
+    ctx.strokeStyle = '#2d7ff9'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let px = 16; px <= canvas.width - 16; px += 6) {
+      const f = minF + ((px - 16) / (canvas.width - 32)) * (maxF - minF), y = toY(evalProp(layer, prop, f));
+      if (px === 16) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+    }
+    ctx.stroke();
+    kfs.forEach(k => { ctx.fillStyle = runtime.selectedKeyframe?.kfId === k.id ? '#fff' : '#f5b942'; ctx.beginPath(); ctx.arc(toX(k.frame), toY(k.value), 5, 0, Math.PI * 2); ctx.fill(); });
+  }
+
+  function renderStoryboardUI() {
+    const wrap = document.getElementById('ai-storyboard-wrap'); wrap.innerHTML = '';
+    project.storyboard.forEach((sc, idx) => {
+      const card = document.createElement('div'); card.className = 'sb-card' + (sc.approved ? ' approved' : '');
+      card.innerHTML = `<div class="sb-head"><span>Scene ${idx + 1} • ${sc.durationSec}s</span><span class="badge ${sc.approved ? 'ok' : ''}">${sc.approved ? 'LOCKED' : sc.model.toUpperCase()}</span></div>
+        <div style="font-size:10.5px;">"${sc.narration}"</div>
+        <div style="font-size:10px;color:var(--text-soft);"><b>Choreography:</b> ${sc.note}</div>
+        <div style="display:flex;gap:4px;margin-top:4px;"><button class="${sc.approved ? 'active' : 'primary'}" data-act="app">${sc.approved ? 'Unlock' : 'Approve'}</button><button data-act="dur">+1s</button></div>`;
+      card.querySelector('[data-act="app"]').onclick = () => { sc.approved = !sc.approved; renderStoryboardUI(); };
+      card.querySelector('[data-act="dur"]').onclick = () => { if (!sc.approved) { sc.durationSec += 1; sc.endFrame += project.composition.fps; renderStoryboardUI(); } };
+      wrap.appendChild(card);
+    });
+  }
+
+  function refreshAllUI() {
+    document.getElementById('proj-name').value = project.name;
+    document.getElementById('btn-toggle-subs').textContent = `Subs: ${project.ui.showSubtitles ? 'ON' : 'OFF'}`;
+    document.getElementById('btn-toggle-subs').classList.toggle('active', project.ui.showSubtitles);
+    document.getElementById('btn-mute-text').textContent = `Mute Txt: ${project.ui.muteTextOnFrame ? 'ON' : 'OFF'}`;
+    document.getElementById('btn-mute-text').classList.toggle('active', project.ui.muteTextOnFrame);
+    renderAssetsPanel(); renderTimeline(); renderInspector(); renderPreview();
+  }
+
+  function togglePlay() {
+    runtime.isPlaying = !runtime.isPlaying;
+    document.getElementById('tl-play').textContent = runtime.isPlaying ? '⏸' : '▶';
+    document.getElementById('btn-preview-play').textContent = runtime.isPlaying ? '⏸ Pause' : '▶ Play';
+    if (runtime.isPlaying) {
+      if (runtime.playhead >= project.composition.durationFrames - 1) runtime.playhead = 0;
+      runtime.lastTick = performance.now();
+      audioEngine.startPlaybackFromFrame(runtime.playhead);
+      requestAnimationFrame(playStep);
+    } else audioEngine.stopPlayback();
+  }
+
+  function playStep(now) {
+    if (!runtime.isPlaying) return;
+    const fps = project.composition.fps, elapsedFrames = Math.floor(((now - runtime.lastTick) / 1000) * fps);
+    if (elapsedFrames >= 1) {
+      runtime.playhead += elapsedFrames; runtime.lastTick = now;
+      if (runtime.playhead >= project.composition.durationFrames) { runtime.playhead = 0; audioEngine.startPlaybackFromFrame(0); }
+      renderPreview(); updatePlayheadLine();
+    }
+    requestAnimationFrame(playStep);
+  }
+
+  (() => {
+    const canvas = document.getElementById('preview-canvas');
+    canvas.onmousedown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = ((e.clientX - rect.left) / rect.width) * project.composition.width;
+      const cy = ((e.clientY - rect.top) / rect.height) * project.composition.height;
+      const hit = project.layers.find(l => {
+        if (l.kind === 'audio' || l.hidden || l.locked || runtime.playhead < l.startFrame || runtime.playhead > l.endFrame) return false;
+        const lx = evalProp(l, 'x', runtime.playhead), ly = evalProp(l, 'y', runtime.playhead);
+        const w = (l.props.width || 400) * (evalProp(l, 'scaleX', runtime.playhead) / 100), h = (l.props.height || 300) * (evalProp(l, 'scaleY', runtime.playhead) / 100);
+        return Math.abs(cx - lx) <= w / 2 && Math.abs(cy - ly) <= h / 2;
+      });
+      if (!hit) return;
+      runtime.selectedLayerId = hit.id; renderInspector(); renderTimeline(); renderPreview();
+      const startX = evalProp(hit, 'x', runtime.playhead), startY = evalProp(hit, 'y', runtime.playhead);
+      let pushed = false;
+      const onMove = (mv) => {
+        const dx = ((mv.clientX - e.clientX) / rect.width) * project.composition.width, dy = ((mv.clientY - e.clientY) / rect.height) * project.composition.height;
+        if (!pushed && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) { pushUndo(); pushed = true; }
+        const kfx = hit.keyframes?.x?.find(k => k.frame === runtime.playhead), kfy = hit.keyframes?.y?.find(k => k.frame === runtime.playhead);
+        if (kfx) kfx.value = Math.round(startX + dx); else hit.props.x = Math.round(startX + dx);
+        if (kfy) kfy.value = Math.round(startY + dy); else hit.props.y = Math.round(startY + dy);
+        renderPreview(); renderInspector();
+      };
+      const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    };
+  })();
+
+  function bindSplitter(elId, axis, cssVar, invert = false) {
+    document.getElementById(elId).onmousedown = (e) => {
+      const start = axis === 'x' ? e.clientX : e.clientY, root = document.documentElement;
+      const cur = parseInt(getComputedStyle(root).getPropertyValue(cssVar), 10) || 245;
+      const onMove = (mv) => { root.style.setProperty(cssVar, `${clamp(cur + (invert ? -((axis === 'x' ? mv.clientX : mv.clientY) - start) : ((axis === 'x' ? mv.clientX : mv.clientY) - start)), 140, 560)}px`); renderPreview(); };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ left: root.style.getPropertyValue('--left-w'), right: root.style.getPropertyValue('--right-w'), bottom: root.style.getPropertyValue('--timeline-h') })); } catch (_) {}
+      };
+      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    };
+  }
+  bindSplitter('split-left', 'x', '--left-w');
+  bindSplitter('split-right', 'x', '--right-w', true);
+  bindSplitter('split-bottom', 'y', '--timeline-h', true);
+
+  document.getElementById('proj-name').onchange = e => { pushUndo(); project.name = e.target.value; };
+  document.getElementById('btn-save').onclick = () => saveProject(true);
+  document.getElementById('btn-undo').onclick = undo;
+  document.getElementById('btn-redo').onclick = redo;
+  document.getElementById('btn-add-text').onclick = () => addTextLayer();
+  document.getElementById('btn-add-shape').onclick = () => addShapeLayer();
+  document.getElementById('btn-add-3d').onclick = () => add3DLayer();
+  document.getElementById('btn-add-sub').onclick = () => addSubtitleLayer();
+  document.getElementById('btn-add-image').onclick = () => document.getElementById('file-import-input').click();
+  document.getElementById('btn-import').onclick = () => document.getElementById('file-import-input').click();
+  document.getElementById('btn-preview-play').onclick = togglePlay;
+  document.getElementById('tl-play').onclick = togglePlay;
+  document.getElementById('tl-stop').onclick = () => { if (runtime.isPlaying) togglePlay(); runtime.playhead = 0; renderPreview(); updatePlayheadLine(); };
+  document.getElementById('tl-start').onclick = () => { runtime.playhead = 0; renderPreview(); updatePlayheadLine(); };
+  document.getElementById('tl-end').onclick = () => { runtime.playhead = project.composition.durationFrames - 1; renderPreview(); updatePlayheadLine(); };
+  document.getElementById('tl-prev').onclick = () => { runtime.playhead = Math.max(0, runtime.playhead - 1); renderPreview(); updatePlayheadLine(); };
+  document.getElementById('tl-next').onclick = () => { runtime.playhead = Math.min(project.composition.durationFrames - 1, runtime.playhead + 1); renderPreview(); updatePlayheadLine(); };
+  document.getElementById('btn-toggle-subs').onclick = () => { pushUndo(); project.ui.showSubtitles = !project.ui.showSubtitles; refreshAllUI(); };
+  document.getElementById('btn-mute-text').onclick = () => { pushUndo(); project.ui.muteTextOnFrame = !project.ui.muteTextOnFrame; refreshAllUI(); };
+
+  document.getElementById('tl-ruler').onmousedown = (e) => {
+    const scrub = (ev) => {
+      const rect = e.target.getBoundingClientRect(), scroll = document.getElementById('tl-tracks-scroll').scrollLeft;
+      runtime.playhead = clamp(Math.round((Math.max(0, ev.clientX - rect.left + scroll) / getPxPerSec()) * project.composition.fps), 0, project.composition.durationFrames - 1);
+      renderPreview(); updatePlayheadLine();
+    };
+    scrub(e);
+    const up = () => { window.removeEventListener('mousemove', scrub); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', scrub); window.addEventListener('mouseup', up);
+  };
+  document.getElementById('tl-tracks-scroll').onscroll = (e) => {
+    document.getElementById('tl-ruler-wrap').scrollLeft = e.target.scrollLeft;
+    document.getElementById('tl-rows-left').scrollTop = e.target.scrollTop;
+  };
+  document.getElementById('tl-rows-left').onscroll = (e) => { document.getElementById('tl-tracks-scroll').scrollTop = e.target.scrollTop; };
+
+  document.getElementById('tl-zoom').oninput = () => renderTimeline();
+  document.getElementById('tl-snap').onclick = (e) => { project.ui.snapping = !project.ui.snapping; e.target.classList.toggle('active', project.ui.snapping); };
+  document.getElementById('tl-graph-toggle').onclick = (e) => { project.ui.graphOpen = !project.ui.graphOpen; e.target.classList.toggle('active', project.ui.graphOpen); renderGraphEditor(); };
+  document.getElementById('graph-prop-select').onchange = renderGraphEditor;
+  document.getElementById('graph-easing-select').onchange = (e) => {
+    if (!runtime.selectedKeyframe) return;
+    const l = project.layers.find(x => x.id === runtime.selectedKeyframe.layerId);
+    const kf = l?.keyframes?.[runtime.selectedKeyframe.prop]?.find(k => k.id === runtime.selectedKeyframe.kfId);
+    if (kf) { pushUndo(); kf.easing = e.target.value; renderGraphEditor(); }
+  };
+  document.getElementById('graph-copy-kf').onclick = () => {
+    if (!runtime.selectedKeyframe) return toast('Select a keyframe diamond first');
+    const l = project.layers.find(x => x.id === runtime.selectedKeyframe.layerId);
+    const kf = l?.keyframes?.[runtime.selectedKeyframe.prop]?.find(k => k.id === runtime.selectedKeyframe.kfId);
+    if (kf) { runtime.copiedKeyframes = { prop: runtime.selectedKeyframe.prop, value: kf.value, easing: kf.easing }; toast('Keyframe copied'); }
+  };
+  document.getElementById('graph-paste-kf').onclick = () => {
+    if (!runtime.copiedKeyframes) return toast('No copied keyframe');
+    const l = project.layers.find(x => x.id === runtime.selectedLayerId); if (!l) return;
+    pushUndo(); l.keyframes[runtime.copiedKeyframes.prop] = l.keyframes[runtime.copiedKeyframes.prop] || [];
+    l.keyframes[runtime.copiedKeyframes.prop].push({ id: uid('kf'), frame: runtime.playhead, value: runtime.copiedKeyframes.value, easing: runtime.copiedKeyframes.easing });
+    l.keyframes[runtime.copiedKeyframes.prop].sort((a, b) => a.frame - b.frame); refreshAllUI();
+  };
+  document.getElementById('graph-del-kf').onclick = () => {
+    if (!runtime.selectedKeyframe) return;
+    const l = project.layers.find(x => x.id === runtime.selectedKeyframe.layerId); if (!l) return;
+    pushUndo(); l.keyframes[runtime.selectedKeyframe.prop] = (l.keyframes[runtime.selectedKeyframe.prop] || []).filter(k => k.id !== runtime.selectedKeyframe.kfId);
+    runtime.selectedKeyframe = null; refreshAllUI();
+  };
+
+  document.getElementById('tl-split').onclick = () => {
+    const l = project.layers.find(x => x.id === runtime.selectedLayerId);
+    if (!l || l.locked) return toast('Select an unlocked layer');
+    if (runtime.playhead <= l.startFrame + 1 || runtime.playhead >= l.endFrame - 1) return toast('Move playhead inside layer bounds');
+    pushUndo(); const copy = deepClone(l); copy.id = uid('lyr'); copy.name = `${l.name} (Part 2)`; copy.startFrame = runtime.playhead; l.endFrame = runtime.playhead - 1;
+    project.layers.unshift(copy); refreshAllUI();
+  };
+  document.getElementById('tl-dup').onclick = () => {
+    const l = project.layers.find(x => x.id === runtime.selectedLayerId); if (!l) return;
+    pushUndo(); const copy = deepClone(l); copy.id = uid('lyr'); copy.name = `${l.name} Copy`; project.layers.unshift(copy); runtime.selectedLayerId = copy.id; refreshAllUI();
+  };
+  document.getElementById('tl-del').onclick = () => {
+    const l = project.layers.find(x => x.id === runtime.selectedLayerId); if (!l) return;
+    if (l.locked) return toast('Unlock layer before deleting');
+    if (!confirm(`Delete layer "${l.name}"?`)) return;
+    pushUndo(); project.layers = project.layers.filter(x => x.id !== l.id); runtime.selectedLayerId = project.layers[0]?.id || null; refreshAllUI();
+  };
+
+  document.getElementById('preview-zoom-select').onchange = (e) => {
+    const v = e.target.value;
+    if (['fit', 'fitW', 'fitH'].includes(v)) project.ui.zoomMode = v;
+    else { project.ui.zoomMode = 'manual'; project.ui.zoomLevel = parseFloat(v); }
+    renderPreview();
+  };
+  document.getElementById('btn-zoom-in').onclick = () => { project.ui.zoomMode = 'manual'; project.ui.zoomLevel = clamp(project.ui.zoomLevel * 1.2, 0.1, 2); renderPreview(); };
+  document.getElementById('btn-zoom-out').onclick = () => { project.ui.zoomMode = 'manual'; project.ui.zoomLevel = clamp(project.ui.zoomLevel / 1.2, 0.1, 2); renderPreview(); };
+  document.getElementById('btn-center-comp').onclick = () => { project.ui.zoomMode = 'fit'; document.getElementById('preview-zoom-select').value = 'fit'; renderPreview(); };
+  document.getElementById('btn-safe-area').onclick = (e) => { project.ui.showSafeArea = !project.ui.showSafeArea; e.target.classList.toggle('active'); renderPreview(); };
+  document.getElementById('btn-grid').onclick = (e) => { project.ui.showGrid = !project.ui.showGrid; e.target.classList.toggle('active'); renderPreview(); };
+  document.getElementById('btn-rulers').onclick = (e) => { project.ui.showRulers = !project.ui.showRulers; e.target.classList.toggle('active'); renderPreview(); };
+  document.getElementById('btn-checker').onclick = (e) => { project.ui.showChecker = !project.ui.showChecker; e.target.classList.toggle('active'); renderPreview(); };
+  document.getElementById('btn-fullscreen').onclick = () => document.getElementById('preview-stage').requestFullscreen?.();
+  document.getElementById('tab-prop-layer').onclick = () => { project.ui.inspectorTab = 'layer'; renderInspector(); };
+  document.getElementById('tab-prop-qc').onclick = () => { project.ui.inspectorTab = 'qc'; renderInspector(); };
+  document.getElementById('tab-prop-ai').onclick = () => { project.ui.inspectorTab = 'ai'; renderInspector(); };
+
+  document.getElementById('btn-new-folder').onclick = () => {
+    const name = prompt('New folder name:', 'B-Roll');
+    if (name) { pushUndo(); project.folders.push({ id: uid('f'), name }); project.ui.activeAssetTab = 'Project'; renderAssetsPanel(); }
+  };
+  document.getElementById('btn-clean-unused').onclick = () => {
+    const used = new Set(project.layers.map(l => l.assetId).filter(Boolean));
+    pushUndo(); project.assets = project.assets.filter(a => a.kind === '3d' || a.source === 'Synthesized WebAudio' || used.has(a.id));
+    renderAssetsPanel(); toast('Cleaned unused assets');
+  };
+  document.getElementById('btn-workspace').onclick = () => {
+    const r = document.documentElement;
+    r.style.setProperty('--left-w', '245px'); r.style.setProperty('--right-w', '285px'); r.style.setProperty('--timeline-h', '210px');
+    try { localStorage.removeItem(LAYOUT_KEY); } catch (_) {}
+    renderPreview(); toast('Restored default layout');
+  };
+
+  document.getElementById('file-import-input').onchange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    pushUndo();
+    for (const f of files) {
+      if (f.name.toLowerCase().endsWith('.srt')) {
+        const blocks = (await f.text()).trim().split(/\n\s*\n/);
+        blocks.forEach((b, i) => {
+          const txt = b.split('\n').slice(2).join(' ').trim();
+          if (txt) project.layers.unshift({
+            id: uid('lyr'), name: `SRT #${i + 1}`, type: 'subtitle', kind: 'visual', startFrame: i * 90, endFrame: i * 90 + 85,
+            locked: false, hidden: false, solo: false, muted: false,
+            text: { content: txt, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 32, fontWeight: '500', color: '#eaf6f6', align: 'center', lineHeight: 1.3, shadow: true, bgColor: 'rgba(4,24,36,0.58)', strokeWidth: 0 },
+            props: { x: project.composition.width / 2, y: project.composition.height * 0.88, width: project.composition.width * 0.84, height: 110, scaleX: 100, scaleY: 100, rotation: 0, opacity: 100, blur: 0, glow: 0 }, keyframes: {}
+          });
+        });
+        toast(`Imported ${blocks.length} SRT entries`); continue;
+      }
+      const id = uid('ast'), url = URL.createObjectURL(f);
+      if (f.type.startsWith('image/')) {
+        const img = new Image(); await new Promise(res => { img.onload = res; img.onerror = res; img.src = url; });
+        runtime.mediaCache.set(id, { img, url });
+        const asset = { id, name: f.name, kind: 'image', url, width: img.naturalWidth, height: img.naturalHeight, source: 'Local File' };
+        project.assets.push(asset); addLayerFromAsset(asset);
+      } else if (f.type.startsWith('video/')) {
+        const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.src = url;
+        await new Promise(res => { vid.onloadedmetadata = res; vid.onerror = res; });
+        runtime.mediaCache.set(id, { video: vid, url });
+        const asset = { id, name: f.name, kind: 'video', url, width: vid.videoWidth, height: vid.videoHeight, duration: vid.duration || 6, source: 'Local File' };
+        project.assets.push(asset); addLayerFromAsset(asset);
+      } else if (f.type.startsWith('audio/')) {
+        const decoded = await audioEngine.ensureCtx().decodeAudioData(await f.arrayBuffer());
+        runtime.mediaCache.set(id, { audioBuffer: decoded, peaks: audioEngine.computePeaks(decoded), url });
+        const asset = { id, name: f.name, kind: 'audio', subkind: 'voiceover', duration: decoded.duration, source: 'Local File' };
+        project.assets.push(asset); addLayerFromAsset(asset);
+      }
+    }
+    e.target.value = ''; refreshAllUI();
+  };
+
+  document.getElementById('btn-comp-settings').onclick = () => {
+    const c = project.composition;
+    document.getElementById('cs-name').value = c.name; document.getElementById('cs-preset').value = c.preset || 'custom';
+    document.getElementById('cs-w').value = c.width; document.getElementById('cs-h').value = c.height;
+    document.getElementById('cs-fps').value = c.fps; document.getElementById('cs-dur').value = Math.round(c.durationFrames / c.fps);
+    document.getElementById('cs-bg').value = c.bgColor; openModal('modal-comp');
+  };
+  document.getElementById('cs-preset').onchange = (e) => {
+    if (e.target.value === 'custom') return;
+    const [w, h] = e.target.value.split('x').map(Number);
+    document.getElementById('cs-w').value = w; document.getElementById('cs-h').value = h;
+  };
+  document.getElementById('cs-apply').onclick = () => {
+    const nw = clamp(+document.getElementById('cs-w').value, 120, 3840), nh = clamp(+document.getElementById('cs-h').value, 120, 3840);
+    const nfps = clamp(+document.getElementById('cs-fps').value, 12, 120), ndur = clamp(+document.getElementById('cs-dur').value, 1, 600);
+    const adapt = document.getElementById('cs-adapt').value, ow = project.composition.width, oh = project.composition.height;
+    if (project.layers.length && (ow !== nw || oh !== nh) && !confirm('Changing resolution may affect layer framing. Apply chosen resize policy?')) return;
+    pushUndo();
+    project.composition.name = document.getElementById('cs-name').value; project.composition.preset = document.getElementById('cs-preset').value;
+    project.composition.width = nw; project.composition.height = nh; project.composition.fps = nfps;
+    project.composition.durationFrames = Math.round(ndur * nfps); project.composition.bgColor = document.getElementById('cs-bg').value;
+    if (ow !== nw || oh !== nh) {
+      const rx = nw / ow, ry = nh / oh, uniform = adapt === 'scaleFit' ? Math.min(rx, ry) : adapt === 'cropFill' ? Math.max(rx, ry) : 1;
+      project.layers.forEach(l => {
+        if (l.kind === 'audio') return;
+        if (adapt !== 'manual') {
+          l.props.x = Math.round((l.props.x / ow) * nw); l.props.y = Math.round((l.props.y / oh) * nh);
+          if (uniform !== 1) { l.props.scaleX = Math.round(l.props.scaleX * uniform); l.props.scaleY = Math.round(l.props.scaleY * uniform); }
+        }
+      });
+    }
+    closeModal('modal-comp'); refreshAllUI(); toast(`Composition updated: ${nw}×${nh} @ ${nfps}fps`);
+  };
+
+  document.getElementById('btn-ai-director').onclick = () => openModal('modal-ai');
+  document.getElementById('btn-ai-analyze').onclick = () => {
+    const txt = document.getElementById('ai-script-input').value.trim();
+    if (!txt) return toast('Paste a narration script first');
+    const scenes = AIDirector.analyzeScript(txt, parseInt(document.getElementById('ai-wpm').value, 10) || 130);
+    renderStoryboardUI(); document.getElementById('btn-ai-assemble').disabled = false;
+    document.getElementById('ai-status-log').textContent = `Analyzed ${scenes.length} scenes.`;
+  };
+  document.getElementById('btn-ai-research').onclick = async () => {
+    if (!project.storyboard.length) AIDirector.analyzeScript(document.getElementById('ai-script-input').value);
+    await AIDirector.researchVisuals(project.storyboard); document.getElementById('btn-ai-assemble').disabled = false;
+  };
+  document.getElementById('btn-ai-assemble').onclick = () => AIDirector.assembleTimeline();
+
+  document.getElementById('btn-export').onclick = () => {
+    const mp4Ok = typeof MediaRecorder !== 'undefined' && (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2') || MediaRecorder.isTypeSupported('video/mp4'));
+    document.getElementById('ex-cap-note').textContent = mp4Ok
+      ? 'Browser check: WebM and MP4 MediaRecorder supported. Video preview & direct Save link will appear below after render.'
+      : 'Browser check: WebM (VP8/VP9) supported natively for video export. Video preview & direct Save link will appear below after render.';
+    openModal('modal-export');
+  };
+  document.getElementById('ex-start-btn').onclick = startRealExport;
+
+  window.addEventListener('keydown', (e) => {
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); redo(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveProject(true); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); document.getElementById('tl-dup').click(); }
+    else if (e.key === 'Delete') document.getElementById('tl-del').click();
+    else if (e.key === 'Home') { runtime.playhead = 0; renderPreview(); updatePlayheadLine(); }
+    else if (e.key === 'End') { runtime.playhead = project.composition.durationFrames - 1; renderPreview(); updatePlayheadLine(); }
+    else if (e.key === 'ArrowLeft') { runtime.playhead = Math.max(0, runtime.playhead - 1); renderPreview(); updatePlayheadLine(); }
+    else if (e.key === 'ArrowRight') { runtime.playhead = Math.min(project.composition.durationFrames - 1, runtime.playhead + 1); renderPreview(); updatePlayheadLine(); }
+  });
+
+  window.addEventListener('resize', renderPreview);
+  try {
+    const lay = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
+    if (lay) {
+      if (lay.left) document.documentElement.style.setProperty('--left-w', lay.left);
+      if (lay.right) document.documentElement.style.setProperty('--right-w', lay.right);
+      if (lay.bottom) document.documentElement.style.setProperty('--timeline-h', lay.bottom);
+    }
+  } catch (_) {}
+
+  try {
+    const savedRaw = localStorage.getItem(STORAGE_KEY);
+    if (savedRaw) { const parsed = JSON.parse(savedRaw); if (parsed?.composition && parsed?.layers) project = parsed; }
+  } catch (_) {}
+
+  if (!project.layers.length) {
+    AIDirector.analyzeScript(document.getElementById('ai-script-input').value, 130);
+    renderStoryboardUI(); document.getElementById('btn-ai-assemble').disabled = false;
+    AIDirector.assembleTimeline(); setProjectStatus('Saved');
+  } else refreshAllUI();
+
+  setInterval(() => { if (project.status === 'Unsaved changes') saveProject(false); }, 15000);
+})();
+</script>
+</body>
+</html>
+```

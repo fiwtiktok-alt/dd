@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+:root {
+  --bg-app: #0c0d10;
+  --bg-panel: #14161b;
+  --bg-elev: #1b1e25;
+  --bg-hover: #232731;
+  --bg-input: #101216;
+  --border: #272b35;
+  --border-strong: #373c4a;
+  --text: #e6e8ed;
+  --text-soft: #9aa1b0;
+  --text-dim: #666d7c;
+  --accent: #2d7ff9;
+  --accent-soft: rgba(45, 127, 249, 0.16);
+  --warn: #e5a93b;
+  --danger: #e25555;
+  --ok: #38b87c;
+  --track-h: 26px;
+  --left-w: 248px;
+  --right-w: 290px;
+  --timeline-h: 215px;
+  --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-app);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  overflow: hidden;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  user-select: text;
+  font-family: var(--font-ui);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d323e;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4555;
+}
+
+.studio-grid {
+  display: grid;
+  grid-template-rows: auto 1fr 4px var(--timeline-h, 215px);
+  grid-template-columns: var(--left-w, 248px) 4px 1fr 4px var(--right-w, 290px);
+  width: 100vw;
+  height: 100vh;
+}
+
+.studio-btn {
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 23px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.studio-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.studio-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.studio-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+
+.studio-btn.primary:hover:not(:disabled) {
+  background: #3b89ff;
+}
+
+.studio-btn.ok-btn {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #07140d;
+  font-weight: 600;
+}
+
+.studio-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: #7cb3ff;
+}
+
+.studio-btn.danger-btn {
+  color: #ff8c8c;
+  border-color: #462626;
+}
+
+.studio-btn.icon-btn {
+  padding: 2px 5px;
+  justify-content: center;
+  min-width: 23px;
+}
+
+.studio-input,
+.studio-select,
+.studio-textarea {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  outline: none;
+}
+
+.studio-input:focus,
+.studio-select:focus,
+.studio-textarea:focus {
+  border-color: var(--accent);
+}
+
+.studio-input[type="number"] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  height: 22px;
+}
+
+.studio-select {
+  height: 22px;
+}
+
+.splitter:hover {
+  background: var(--accent) !important;
+}
+
+.kf-dot {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--text-dim);
+  transform: rotate(45deg);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-block;
+  background: transparent;
+}
+
+.kf-dot.has-kf {
+  border-color: var(--accent);
+}
+
+.kf-dot.at-kf {
+  background: var(--accent);
+  border-color: var(--accent);
+}
